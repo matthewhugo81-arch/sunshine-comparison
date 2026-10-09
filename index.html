@@ -7,8 +7,8 @@
   <meta name="theme-color" content="#172d3b">
   <title>Sunshine comparison</title>
   <link rel="icon" href="assets/sun.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="styles.css?v=20261009-compact">
-  <script src="app.js?v=20261009-compact" defer></script>
+  <link rel="stylesheet" href="styles.css?v=20261009-quality1">
+  <script src="app.js?v=20261009-quality1" defer></script>
 </head>
 <body>
   <header class="masthead">
@@ -19,7 +19,7 @@
     </div>
   </header>
   <main class="shell">
-    <p class="alert" role="status"><strong>Sunshine estimates under review.</strong> The near-daylight totals reported in some areas are being checked against the underlying radiation and cloud forecasts. Please do not rely on these sunshine amounts until this review is complete.</p>
+    <p class="alert quality-notice"><strong>Experimental sunshine estimates.</strong> Suspect values are withheld as “Review”. Remaining amounts have not been validated against observed sunshine. <a href="#quality-checks">See the checks and evidence</a>.</p>
     <section class="toolbar" aria-label="Forecast controls">
       <div class="field date-field"><label for="forecast-date">Forecast date</label><div class="date-controls"><button id="previous" class="step" aria-label="Previous forecast day" disabled>←</button><select id="forecast-date" disabled><option>Loading forecasts…</option></select><button id="next" class="step" aria-label="Next forecast day" disabled>→</button></div></div>
       <div class="field"><label for="model-select">Models</label><select id="model-select" disabled><option value="all">Compare all four</option></select></div>
@@ -30,15 +30,25 @@
     <section class="day-heading" aria-live="polite"><h2 id="day-title">Loading…</h2><p id="coverage"></p></section>
     <section id="maps" class="maps" aria-label="Sunshine forecast maps"></section>
     <section class="table-section">
-      <div class="section-heading"><h2>Station comparison</h2><span>Hours, rounded to the nearest whole hour</span></div>
+      <div class="section-heading"><h2>Station comparison</h2><span>Hours · Review = withheld · — = no complete source data</span></div>
       <div class="table-scroll" tabindex="0" aria-label="Station comparison table; scroll horizontally on small screens"><table id="station-table"><caption class="sr-only">Sunshine hours at each station for the selected forecast day</caption><thead></thead><tbody></tbody></table></div>
     </section>
+    <details class="method" id="quality-checks">
+      <summary id="quality-summary">Data checks and supporting cloud / rain forecasts</summary>
+      <div class="method-body">
+        <p>“Review” withholds a value; it does not replace it with zero or a lower estimate. Physical failures and conservative cloud/rain review flags are shown separately below. Passing these screens does not establish forecast accuracy. Cloud means use daylight-weighted averages of hourly endpoints; rain covers intervals that overlap daylight.</p>
+        <p>Review screens can also flag genuine sunshine through thin cloud or between showers. They are screening rules, not a calibrated sunshine model. <a href="data/audit-2026-10-09.json">Read the original audit evidence</a> · <a href="data/hourly.json">Download this run’s hourly source data</a></p>
+      </div>
+      <div class="table-scroll"><table id="quality-table"><caption class="sr-only">Checks and source diagnostics for the selected date and models</caption><thead><tr><th>Station / model</th><th>Provider estimate (h)</th><th>Daylight (h)</th><th>Cloud / low cloud</th><th>Rain (mm)</th><th>Assessment</th></tr></thead><tbody></tbody></table></div>
+    </details>
     <details class="method">
       <summary>About the data and comparison with ePD</summary>
       <div class="method-body">
-        <p>These are <strong>radiation-derived sunshine estimates</strong> from Open-Meteo, using the direct normal irradiance threshold of 120 W/m². Each model uses the same 00 UTC forecast cycle. All 24 hourly intervals must be present at every station before a daily map is shown.</p>
+        <p>These are <strong>experimental radiation-derived estimates</strong> from Open-Meteo, not native model sunshine-duration fields. Its approximation ramps from no sunshine at 60 W/m² to full sunshine at 180 W/m² of direct normal irradiance, centred on the 120 W/m² sunshine threshold. Applying this to hourly mean radiation cannot resolve intermittent sunshine and can overstate duration in broken cloud. Hourly API values may be interpolated from longer model intervals.</p>
+        <p>Each model uses the same 00 UTC forecast cycle. All 24 sunshine intervals must be present at every station before a day enters the dropdown. At each station, incomplete supporting data, invalid units/ranges, material radiation inconsistency, or sunshine outside astronomical daylight withholds the amount. A 2 W/m² tolerance allows radiation rounding noise and a 10-minute tolerance allows approximate sunrise/sunset geometry.</p>
+        <p>Conservative review flags also withhold: sunshine at least 90% of daylight with mean cloud at least 25%; sunshine at least 75% of daylight with at least 1 mm of rain in daylight intervals; or two or more hours with at least 45 minutes of sunshine and at least 80% low cloud. These thresholds are transparent review rules, <strong>not an observation-validated correction</strong>. They may flag thin cloud or showers that allow sunshine.</p>
         <p>Values cover <strong>00:00–24:00 UTC</strong>. They are rounded once, after summing the day; zero can mean less than half an hour. Forecasts are sampled at the nearest model grid cell to each station. Regions are the supplied labels, not regional averages.</p>
-        <p>These are single forecasts. They do not reproduce ePD’s 10th and 90th percentiles, and disagreement between models is not an equivalent probability range. The estimates have not been calibrated to ePD or validated here against observations.</p>
+        <p>These are single forecasts. They do not reproduce ePD’s 10th and 90th percentiles, and disagreement between models is not an equivalent probability range. The estimates have not been calibrated to ePD or validated here against observations. A 500 hPa / pressure chart is useful context but cannot determine a station’s daily sunshine total; AIFS and IFS, and different run times, are distinct forecasts.</p>
         <p>The dropdown follows actual complete data. ECMWF and GFS usually extend much further than the two Met Office sunshine feeds. Missing or partial days are never counted as zero. The generic “RoI — Republic of Ireland” entry is awaiting a station or averaging definition.</p>
         <p>Forecast updates are checked four times daily. The common 00 UTC cycle is used; if today’s cycle is not yet available from every model, the previous day’s cycle is retained. GitHub’s scheduled runs can be delayed.</p>
         <p>Sources: <a href="https://open-meteo.com/en/docs/ecmwf-api">ECMWF IFS</a>, <a href="https://open-meteo.com/en/docs/gfs-api">GFS</a>, <a href="https://open-meteo.com/en/docs/ukmo-api">UKMO Global and UKV</a>, <a href="https://open-meteo.com/en/docs/single-runs-api">individual forecast runs</a>. <a href="data/forecast.json">Download underlying forecast data</a>.</p>

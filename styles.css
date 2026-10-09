@@ -35,6 +35,11 @@ select{height:35px;font-size:13px;padding-left:10px}
 .table-section{margin-top:20px}
 .section-heading{margin-bottom:9px}
 .section-heading h2{font-size:18px}
+.quality-notice{margin:8px 0;padding:6px 10px;font-size:11px}
+td.review{font-size:12px;color:#8a4429}
+td.check-reason{white-space:normal;min-width:240px;max-width:470px;font-size:12px}
+#quality-checks .table-scroll{border-radius:0 0 10px 10px;max-height:480px;overflow:auto}
+#quality-checks{scroll-margin-top:12px}
 @media(max-width:1099px){
   .maps{grid-template-columns:repeat(2,minmax(0,1fr));max-width:860px;margin-inline:auto}
   .maps.single{max-width:560px}

@@ -24,7 +24,7 @@ jobs:
       - uses: actions/setup-python@v6
         with:
           python-version: '3.12'
-      - name: Check daily aggregation
+      - name: Check aggregation and quality screening
         run: python -m unittest discover -s tests
       - name: Refresh the common 00 UTC forecast run
         env:
@@ -34,7 +34,7 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add data/forecast.json
+          git add data/forecast.json data/hourly.json
           if ! git diff --cached --quiet; then
             git commit -m "Update sunshine forecast snapshot"
             git push
