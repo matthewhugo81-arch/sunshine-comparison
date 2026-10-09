@@ -28,7 +28,7 @@ function makeMap(model,date){
   stations.forEach((s,i)=>{
     const value=model.daily[date][i],label=valueLabel(model,date,i);const [x,y]=s.point,[lx,ly]=s.label;
     const name=$('label-select').value==='region'?s.region:s.short;
-    const width=Math.max(68,name.length*7.9+18);
+    const width=Math.max(Number.isFinite(value)?68:84,name.length*7.9+18);
     const g=element('g',{class:'station-marker',tabindex:'0','aria-label':`${s.name}, ${s.region}: ${label}${Number.isFinite(value)?' hours':''}. ${reasonLabel(model,date,i)}`});
     g.append(element('title',{},`${s.name} · ${s.region}\n${label}${Number.isFinite(value)?' sunshine hours':''}\n${reasonLabel(model,date,i)}\n${model.name} · ${dateLabel(date)}`));
     g.append(element('path',{d:`M${x},${y}L${lx},${ly}`,stroke:'#8295a2','stroke-width':1.4,fill:'none'}));
