@@ -1,5 +1,65 @@
 :root{--navy:#172d3b;--ink:#18303f;--muted:#657887;--gold:#ffc857;--line:#dce3e7;--page:#f3f5f6;--sea:#c9d2db;--land:#263747;color-scheme:light}
 *{box-sizing:border-box}body{margin:0;background:var(--page);color:var(--ink);font-family:Inter,Segoe UI,Arial,sans-serif;font-size:15px;line-height:1.5}.shell{width:min(1380px,calc(100% - 64px));margin-inline:auto}.masthead{background:var(--navy);color:#fff;padding:35px 0 33px;border-top:5px solid var(--gold)}.heading-row{display:flex;align-items:center;gap:20px}.brand-icon{height:64px;width:64px;display:grid;place-items:center;color:var(--gold);font-size:57px;line-height:1}.eyebrow{font-size:11px;letter-spacing:.16em;font-weight:750;margin:0 0 5px;color:var(--muted)}.masthead .eyebrow{color:#acbeca}h1{font-size:32px;letter-spacing:-.03em;line-height:1.16;margin:0}.intro{margin:8px 0 0;color:#c3cfd7;font-size:15px}.period-pill{margin-left:auto;border:1px solid #476071;border-radius:10px;padding:12px 18px;font-size:14px;font-weight:650;color:var(--gold)}.period-pill span{display:block;font-size:12px;font-weight:400;color:#b6c7d1;margin-top:2px}.toolbar{display:grid;grid-template-columns:1.55fr 1fr .8fr;gap:22px;background:#fff;border:1px solid var(--line);border-radius:12px;padding:22px 24px;margin:26px 0 0;box-shadow:0 4px 20px #162d3b05}.field label{display:block;font-size:12px;color:var(--muted);font-weight:700;margin:0 0 7px}.date-controls{display:flex;gap:8px}select,button{font:inherit}select{color:var(--ink);background:#fafbfc;border:1px solid #c8d2da;border-radius:7px;height:43px;padding:0 34px 0 12px;width:100%;cursor:pointer}.date-controls select{min-width:0}button{cursor:pointer;border-radius:7px}.step{flex:0 0 43px;border:1px solid #c8d2da;color:var(--ink);background:#fff;font-size:20px}button:hover:not(:disabled){background:#eaf0f4}button:disabled,select:disabled{cursor:default;opacity:.45}:focus-visible{outline:3px solid #bd8600;outline-offset:3px}.forecast-meta{display:flex;justify-content:space-between;gap:12px;color:var(--muted);font-size:12px;padding:0 2px}.forecast-meta p{margin:11px 0}.day-heading{margin:24px 0 18px;display:flex;justify-content:space-between;align-items:flex-end;gap:16px}.day-heading h2{font-size:27px;letter-spacing:-.025em;line-height:1.2;margin:0}.day-heading>p{margin:0;color:var(--muted);font-size:13px}.maps{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:24px}.maps.single{grid-template-columns:minmax(0,850px);justify-content:center}.map-card{border:1px solid var(--line);border-radius:12px;overflow:hidden;background:white}.card-header{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:17px 20px}.card-header h3{font-size:19px;margin:0;letter-spacing:-.02em}.card-header p{color:var(--muted);font-size:12px;margin:3px 0 0}.download{border:1px solid var(--line);background:#fff;color:var(--ink);font-size:12px;padding:7px 11px;white-space:nowrap}.map-svg{display:block;width:100%;height:auto;background:var(--sea)}.card-footer{display:flex;justify-content:space-between;gap:10px;padding:10px 19px;font-size:11px;color:var(--muted);border-top:1px solid var(--line)}.unavailable{min-height:300px;display:flex;align-items:center;justify-content:center;flex-direction:column;padding:42px;text-align:center;background:repeating-linear-gradient(135deg,#f6f8f9,#f6f8f9 16px,#f0f3f5 16px,#f0f3f5 17px);height:calc(100% - 83px)}.unavailable strong{font-size:19px;font-weight:650}.unavailable p{max-width:300px;color:var(--muted);font-size:14px}.unavailable .empty-icon{font-size:32px;color:#92a3af;margin-bottom:12px}.alert{padding:13px 17px;background:#fff4d9;border:1px solid #ead7a0;border-radius:8px;font-size:13px}.table-section{margin-top:36px}.section-heading{display:flex;justify-content:space-between;gap:16px;align-items:center;margin-bottom:15px}.section-heading h2{font-size:21px;margin:0}.section-heading span{font-size:12px;color:var(--muted)}.table-scroll{overflow-x:auto;border:1px solid var(--line);border-radius:10px;background:#fff}table{width:100%;border-collapse:collapse;white-space:nowrap}th{background:#e8edf1;color:#334e60;text-align:left;font-size:12px;font-weight:700;padding:13px 18px}td{padding:11px 18px;font-size:13px;border-top:1px solid #e8edef}td.number,th.number{text-align:center;font-variant-numeric:tabular-nums}td.number{font-weight:750;font-size:16px}tbody tr:nth-child(even){background:#f7f9fa}td.region{color:var(--muted);font-size:12px}.missing{color:#a6b2bb;font-weight:400}.method{margin:30px 0;border:1px solid var(--line);border-radius:10px;background:white}.method summary{cursor:pointer;padding:17px 20px;font-size:14px;font-weight:650}.method-body{padding:0 24px 13px;max-width:1100px;font-size:13px;color:#4f6575}.method-body p{margin:0 0 14px}.footer{padding:0 0 28px;display:flex;justify-content:space-between;gap:20px;font-size:11px;color:var(--muted)}a{color:inherit;text-underline-offset:3px}a:hover{color:#936a00}.sr-only{position:absolute;overflow:hidden;width:1px;height:1px;clip:rect(0,0,0,0);white-space:nowrap}.station-marker:focus{outline:none}.station-marker:focus rect,.station-marker:hover rect{stroke:#ffc857;stroke-width:3}.station-marker{cursor:help}
-@media(min-width:1650px){.shell{width:min(1530px,calc(100% - 80px))}}
-@media(max-width:760px){.shell{width:calc(100% - 28px)}.masthead{padding:24px 0}.brand-icon{width:39px;font-size:42px}.heading-row{gap:12px;flex-wrap:wrap}h1{font-size:26px}.intro{font-size:13px}.period-pill{margin:8px 0 0 51px;padding:7px 11px;font-size:12px}.period-pill span{display:inline;margin-left:8px;font-size:10px}.toolbar{grid-template-columns:1fr 1fr;gap:14px;padding:17px;margin-top:18px}.date-field{grid-column:1/-1}.forecast-meta{flex-direction:column;gap:0}.forecast-meta p{margin:8px 0 0}.day-heading{margin-top:25px;display:block}.day-heading h2{font-size:23px}.day-heading>p{margin-top:8px}.maps{grid-template-columns:1fr;gap:18px}.card-header{padding:14px 16px}.section-heading{display:block}.section-heading span{display:block;margin-top:5px}.footer{display:block}.unavailable{min-height:190px;padding:24px}.table-section{margin-top:26px}th,td{padding:10px 13px}}
+/* Keep all four maps in the first desktop screen; a selected model stays larger. */
+.shell{width:min(1800px,calc(100% - 36px))}
+.masthead{padding:10px 0;border-top-width:3px}
+.heading-row{gap:12px}
+.brand-icon{width:36px;height:36px;font-size:36px}
+.masthead .eyebrow{font-size:9px;margin:0 0 2px}
+h1{font-size:23px}
+.period-pill{padding:5px 11px;font-size:12px;border-radius:7px}
+.period-pill span{font-size:10px;margin:0}
+.toolbar{gap:16px;padding:9px 13px;margin-top:10px;border-radius:8px;box-shadow:none}
+.field label{font-size:11px;margin-bottom:3px}
+select{height:35px;font-size:13px;padding-left:10px}
+.step{flex-basis:35px;font-size:18px}
+.date-controls{gap:5px}
+.forecast-meta{font-size:10px}
+.forecast-meta p{margin:5px 0}
+.day-heading{margin:9px 0 9px;align-items:center}
+.day-heading h2{font-size:20px}
+.day-heading>p{font-size:11px}
+.maps{grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+.maps.single{grid-template-columns:minmax(0,560px)}
+.map-card{border-radius:8px}
+.card-header{padding:9px 10px;gap:5px;flex-wrap:wrap}
+.card-header h3{font-size:16px}
+.card-header p{font-size:10px;margin-top:1px}
+.download{font-size:10px;padding:4px 7px}
+.card-footer{padding:6px 9px;font-size:9px;flex-wrap:wrap;gap:2px 8px}
+.card-footer span+span{display:none}
+.unavailable{min-height:230px;padding:20px;height:calc(100% - 62px)}
+.unavailable strong{font-size:15px}
+.unavailable p{font-size:12px}
+.unavailable .empty-icon{font-size:27px;margin-bottom:7px}
+.table-section{margin-top:20px}
+.section-heading{margin-bottom:9px}
+.section-heading h2{font-size:18px}
+@media(max-width:1099px){
+  .maps{grid-template-columns:repeat(2,minmax(0,1fr));max-width:860px;margin-inline:auto}
+  .maps.single{max-width:560px}
+}
+@media(max-width:600px){
+  .shell{width:calc(100% - 20px)}
+  .masthead{padding:8px 0}
+  .heading-row{gap:9px;flex-wrap:wrap}
+  .brand-icon{width:28px;height:28px;font-size:28px}
+  h1{font-size:20px}
+  .period-pill{margin:0 0 0 37px;padding:0;border:0;font-size:10px}
+  .period-pill span{display:inline;margin-left:7px;font-size:10px}
+  .toolbar{grid-template-columns:1fr 1fr;gap:6px 12px;padding:8px 10px;margin-top:8px}
+  .date-field{grid-column:1/-1}
+  .forecast-meta{gap:8px;font-size:9px}
+  .forecast-meta p{margin:4px 0}
+  .day-heading{margin:7px 0;gap:8px;flex-wrap:wrap}
+  .day-heading h2{font-size:18px}
+  .day-heading>p{font-size:10px}
+  .maps{grid-template-columns:1fr;gap:12px;max-width:430px}
+  .card-header{padding:8px 10px}
+  .section-heading{display:block}
+  .section-heading span{display:block;margin-top:3px}
+  .footer{display:block}
+  .unavailable{min-height:150px;padding:18px}
+  th,td{padding:8px 11px}
+}
 @media print{.masthead{background:white;color:var(--ink)}.toolbar,.download,.method{display:none}.shell{width:100%}.map-card{break-inside:avoid}.maps{gap:12px}.footer{font-size:8px}.period-pill{color:var(--ink)}.table-section{break-before:page}}

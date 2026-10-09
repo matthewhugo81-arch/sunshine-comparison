@@ -31,7 +31,7 @@ function makeMap(model,date){
     g.append(element('path',{d:`M${x},${y}L${lx},${ly}`,stroke:'#8295a2','stroke-width':1.4,fill:'none'}));
     g.append(element('circle',{cx:x,cy:y,r:3.4,fill:'#fff',stroke:'#172936','stroke-width':1}));
     g.append(element('rect',{x:lx-width/2,y:ly-33,width,height:65,rx:5,fill:'#172936',stroke:'#5c7282','stroke-width':1}));
-    g.append(element('text',{x:lx,y:ly-1,'text-anchor':'middle',fill:'#ffc857','font-size':32,'font-weight':700,'font-family':'Arial, sans-serif'},hours(value)));
+    g.append(element('text',{x:lx,y:ly-1,'text-anchor':'middle',fill:'#ffc857','font-size':40,'font-weight':700,'font-family':'Arial, sans-serif'},hours(value)));
     g.append(element('text',{x:lx,y:ly+21,'text-anchor':'middle',fill:'#e6edf3','font-size':14,'font-family':'Arial, sans-serif'},name));
     svg.append(g);
   });
