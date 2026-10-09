@@ -3,7 +3,8 @@
 A static GitHub Pages dashboard comparing 24-hour sunshine at 20 UK and Irish stations.
 **Experimental estimates, not verified forecasts of observed sunshine.** The October 9 audit
 found impossible direct/total radiation relationships in parts of the IFS feed and limitations
-in estimating sunshine duration from time-averaged radiation. Suspect values are now withheld.
+in estimating sunshine duration from time-averaged radiation. Physical source failures are excluded. Unvalidated cloud/rain screens have been removed;
+this does not repair the provider sunshine method. See [source findings](docs/source-assessment.md).
 The date selector extends to the last complete day available from the selected model.
 Compare all four models, select one, switch between station/region labels, or save a map as PNG.
 
@@ -13,8 +14,9 @@ ECMWF IFS, GFS, UKMO Global and UKV are requested separately from Open-Meteo's S
 The latest common **00 UTC** cycle is used; if unavailable, the previous day's 00 UTC cycle is tried.
 Hourly accumulations are summed at endpoints 01 UTC through the following 00 UTC.
 All 24 sunshine hours at all 20 stations must exist before a model/day enters the dropdown.
-Supporting radiation/cloud data must also pass screening at each station before its amount is displayed.
-Withheld amounts are `null` in `daily` and shown as “Review”; unavailable days remain absent.
+Supporting radiation must pass physical checks at each station before its amount is displayed.
+Physical failures are `null` in `daily` and shown as a gap (—); unavailable days remain absent.
+Cloud and rain are optional context, never a reason to alter or suppress a sunshine amount.
 Rounding is to the nearest whole hour, with halves rounded up, after summation. Provider-reported
 totals remain in each day's `quality` entries, separate from the screened display values.
 Maximum query windows are 15 days for IFS, 16 for GFS, 7 for UKMO Global, and 3 for UKV;
@@ -44,17 +46,16 @@ Thus an 11-hour display can be valid for an unrounded 10.6-hour forecast within 
 Five independent US Naval Observatory reference cases cover north/south locations, summer,
 winter, autumn and a leap day. Sunrise and sunset agree within one minute in those cases.
 
-The following **unvalidated conservative review screens** also withhold amounts:
+No cloud/rain thresholds suppress or reduce amounts. The former unvalidated screens
+were removed on 9 October 2026. Thin cloud and showers can coexist with sunshine.
+Passing the physical checks does not demonstrate forecast accuracy. Rain is not
+fractionally split at sunrise/set; contextual cloud means use preceding-hour
+endpoint averages weighted by daylight overlap.
 
-- Sunshine ≥90% of daylight and daylight-weighted mean total cloud ≥25%.
-- Sunshine ≥75% of daylight and rain in daylight-overlapping intervals ≥1 mm.
-- At least two hours combining sunshine ≥45 minutes and average low cloud ≥80%.
-
-These screens can flag genuine sunshine through thin cloud or between showers. They do not prove
-a forecast wrong, do not correct bias, and never manufacture alternative hours. They identify
-values requiring meteorological review. Passing them does not demonstrate forecast accuracy.
-All remaining numbers are explicitly experimental. Rain is not fractionally split at sunrise/set;
-cloud uses averages of the preceding-hour endpoints weighted by daylight overlap.
+The [native-source assessment](docs/source-assessment.md) records the remaining
+access and definition limitations. Real GFS SUNSD records and complete Met Office
+run inventories are preserved separately in `data/source-investigation-2026-10-09.json`.
+Those diagnostic records are not substituted into the sunshine maps.
 
 `data/hourly.json` retains the retrieved source fields and timestamps for reproducibility.
 `data/audit-2026-10-09.json` preserves the original evidence independently of later forecast refreshes.

@@ -23,7 +23,9 @@ VARIABLES = ['sunshine_duration','shortwave_radiation','direct_radiation','diffu
              'cloud_cover_high','precipitation']
 UNITS = {v: ('s' if v=='sunshine_duration' else '%' if v.startswith('cloud_cover') else
               'mm' if v=='precipitation' else 'W/m²') for v in VARIABLES}
-QC_VERSION = '2026-10-09.2'
+QC_VERSION = '2026-10-09.3'
+RADIATION_VARIABLES = ['shortwave_radiation','direct_radiation','diffuse_radiation',
+                       'direct_normal_irradiance']
 
 def finite(value):
     return not isinstance(value,bool) and isinstance(value,(float,int)) and math.isfinite(value)
@@ -82,10 +84,11 @@ def daylight_details(date, latitude, longitude):
             'daylight_hours':round((setting-rise)/60,6)}
 
 def assess_day(hourly, date, latitude, longitude):
-    """Reject physical failures; separately withhold conservative review flags.
+    """Check source physics, without cloud/rain thresholds or manufactured corrections.
 
-    Cloud/rain screens are NOT validated error detectors or bias corrections. Thin
-    cloud and showers can coexist with sunshine. Flagged values require review.
+    Cloud and rain are context only: their coincidence with sunshine is not a
+    quantitative sunshine model. A passing result remains a provider estimate,
+    not an observation-validated forecast or a native sunshine-duration field.
     """
     day=datetime.fromisoformat(date)
     bytime={t:{v:hourly[v][i] for v in VARIABLES} for i,t in enumerate(hourly['time'])}
@@ -95,17 +98,17 @@ def assess_day(hourly, date, latitude, longitude):
     if total is None:return None
     rise,setting=solar_window(date,latitude,longitude)
     daylight=(setting-rise)/60
-    failures=[];reviews=[];evidence=[]
-    if any(not finite(row.get(v)) for row in rows for v in VARIABLES):
-        failures.append('Incomplete radiation/cloud checks')
+    failures=[];evidence=[]
+    if any(not finite(row.get(v)) for row in rows for v in RADIATION_VARIABLES):
+        failures.append('Incomplete supporting radiation data')
     else:
         for h,(stamp,row) in enumerate(zip(stamps,rows),1):
             ghi,direct,diffuse=(row[k] for k in ['shortwave_radiation','direct_radiation','diffuse_radiation'])
             # 2 W/m² permits rounding/compression noise, not material negative diffuse.
             if direct>ghi+2 or min(ghi,direct,diffuse)<-2 or abs(ghi-direct-diffuse)>2:
                 evidence.append({'time':stamp,'total_w_m2':ghi,'direct_w_m2':direct,'diffuse_w_m2':diffuse})
-            if any(not 0<=row[v]<=100 for v in VARIABLES if v.startswith('cloud_cover')) or row['precipitation']<0 or row['direct_normal_irradiance']<-2:
-                failures.append('Invalid cloud, rain or radiation range')
+            if row['direct_normal_irradiance']<-2:
+                failures.append('Invalid direct normal radiation range')
             # Two-minute tolerance for solar geometry/refraction, before display rounding.
             possible=max(0,min(h*60,setting)-max((h-1)*60,rise))
             if row['sunshine_duration']>possible*60+120:
@@ -116,33 +119,26 @@ def assess_day(hourly, date, latitude, longitude):
             'daylight_hours':round(daylight,3),'reasons':list(dict.fromkeys(failures)),
             'radiation_failures':evidence}
     if not failures or (len(failures)==1 and evidence):
-        cloud_sum=low_sum=rain=weight_sum=conflict=0
+        cloud_sum=low_sum=rain=weight_sum=0
         for h,(stamp,row) in enumerate(zip(stamps,rows),1):
             weight=max(0,min(h*60,setting)-max((h-1)*60,rise))/60
             if weight<=0:continue
             prev=bytime.get((day+timedelta(hours=h-1)).isoformat(timespec='minutes'),{})
-            if not all(finite(prev.get(v)) for v in ['cloud_cover','cloud_cover_low']):
-                result['reasons'].append('Incomplete daylight cloud checks');result['status']='withheld';return result
+            if (not all(finite(r.get(v)) and 0<=r[v]<=100
+                        for r in [prev,row] for v in ['cloud_cover','cloud_cover_low'])
+                    or not finite(row.get('precipitation')) or row['precipitation']<0):
+                # Missing optional context cannot invalidate complete radiation data.
+                return result
             # Cloud is instantaneous: average both bounds of the preceding-hour interval.
             cloud=(prev['cloud_cover']+row['cloud_cover'])/2
             low=(prev['cloud_cover_low']+row['cloud_cover_low'])/2
             cloud_sum+=cloud*weight;low_sum+=low*weight;weight_sum+=weight
             # Rain in an interval touching daylight is included in full, not treated as precise daylight timing.
             rain+=row['precipitation']
-            if low>=80 and row['sunshine_duration']>=2700:conflict+=1
         cloud_mean=cloud_sum/weight_sum if weight_sum else 0
         low_mean=low_sum/weight_sum if weight_sum else 0
-        fraction=total/daylight if daylight else 0
-        if fraction>=.90 and cloud_mean>=25:
-            reviews.append('Near-full daylight sunshine with substantial cloud: review required')
-        if fraction>=.75 and rain>=1:
-            reviews.append('High sunshine with rain in daylight intervals: review required')
-        if conflict>=2:
-            reviews.append('Several bright hours coincide with extensive low cloud: review required')
         result.update(daylight_cloud_percent=round(cloud_mean,1),daylight_low_cloud_percent=round(low_mean,1),
-                      rain_in_daylight_intervals_mm=round(rain,2),low_cloud_conflict_hours=conflict)
-        result['reasons'].extend(reviews)
-        if reviews and not failures:result['status']='review'
+                      rain_in_daylight_intervals_mm=round(rain,2))
     return result
 
 def daily_total(hourly, date):
@@ -199,6 +195,8 @@ def collect(stations,run):
     return results
 
 def build_snapshot(stations,run,responses,now):
+    if len(responses)!=len(MODELS) or any(len(r)!=len(stations) for r in responses):
+        raise ValueError('Missing model or station response')
     start=datetime.fromisoformat(run).date()
     models=[]
     for model,locations in zip(MODELS,responses):
@@ -206,8 +204,8 @@ def build_snapshot(stations,run,responses,now):
         for day in range(model['max_days']):
             date=(start+timedelta(days=day)).isoformat()
             checks=[assess_day(r['hourly'],date,r['latitude'],r['longitude']) for r in locations]
-            # Retain the actual complete-data horizon, including days requiring review.
-            # Each suspect station is null, never zero, and has a reason alongside it.
+            # Require complete sunshine intervals at every station. Physical source
+            # failures remain null; unsupported cloud/rain rules never suppress totals.
             if all(check is not None for check in checks):
                 quality[date]=checks
                 daily[date]=[c['reported_hours'] if c['status']=='experimental' else None for c in checks]
@@ -219,6 +217,8 @@ def build_snapshot(stations,run,responses,now):
     if not dates:raise ValueError('No current/future complete days')
     daylight={date:[daylight_details(date,s['latitude'],s['longitude']) for s in stations] for date in dates}
     return {'schema_version':3,'quality_version':QC_VERSION,'validation_status':'experimental; not observation-validated',
+            'quality_scope':'Physical consistency and completeness only; cloud/rain context does not alter sunshine.',
+            'source_assessment':'https://github.com/matthewhugo81-arch/sunshine-comparison/blob/main/docs/source-assessment.md',
             'daylight':daylight,'daylight_method':'NOAA/Meeus apparent sunrise–sunset; station coordinates, exact Gregorian date, UTC, flat sea-level horizon; excludes twilight.',
             'updated_at':now.isoformat(),'run':run+'Z','dates':dates,
             'period':'00:00–24:00 UTC','rounding':'nearest hour, halves up','models':models,

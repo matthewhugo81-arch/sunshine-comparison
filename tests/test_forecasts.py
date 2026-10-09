@@ -46,22 +46,31 @@ class QualityChecks(unittest.TestCase):
         self.assertEqual(len(bad),2)
         self.assertEqual(bad[0]['diffuse_w_m2'],-30.5)
 
-    def test_real_bishopton_cloud_rain_is_review_not_physical_failure(self):
+    def test_rain_does_not_invent_a_sunshine_correction(self):
         result=self.assess(self.real[1])
-        self.assertEqual(result['status'],'review')
+        self.assertEqual(result['status'],'experimental')
         self.assertEqual(result['radiation_failures'],[])
         self.assertGreater(result['rain_in_daylight_intervals_mm'],5)
+        self.assertEqual(result['reasons'],[])
+        self.assertEqual(result['reported_hours'],10)
 
-    def test_cork_near_daylight_with_cloud_requires_review(self):
+    def test_cloud_does_not_invent_a_sunshine_correction(self):
         result=self.assess(self.real[2])
-        self.assertEqual(result['status'],'review')
+        self.assertEqual(result['status'],'experimental')
         self.assertGreater(result['reported_hours']/result['daylight_hours'],.90)
+        self.assertEqual(result['reasons'],[])
 
     def test_missing_radiation_cannot_pass(self):
         item=copy.deepcopy(self.real[2]);item['hourly']['direct_radiation'][12]=None
         result=self.assess(item)
         self.assertEqual(result['status'],'withheld')
-        self.assertIn('Incomplete radiation/cloud checks',result['reasons'])
+        self.assertIn('Incomplete supporting radiation data',result['reasons'])
+
+    def test_missing_optional_cloud_context_does_not_suppress_amount(self):
+        item=copy.deepcopy(self.real[2]);item['hourly']['cloud_cover'][12]=None
+        result=self.assess(item)
+        self.assertEqual(result['status'],'experimental')
+        self.assertNotIn('daylight_cloud_percent',result)
 
     def test_night_sunshine_is_rejected(self):
         item=copy.deepcopy(self.real[2]);item['hourly']['sunshine_duration'][2]=3600
@@ -93,15 +102,22 @@ class QualityChecks(unittest.TestCase):
         self.assertTrue(10< (oct_s-oct_r)/60 <11)
         self.assertGreater((jun_s-jun_r)/60,17)
 
-    def test_snapshot_keeps_review_as_null_not_zero_or_raw_amount(self):
+    def test_snapshot_preserves_physical_failures_without_cloud_rain_screens(self):
         stations=[{'name':r['station'],'latitude':r['latitude'],'longitude':r['longitude']} for r in self.real]
         snapshot=u.build_snapshot(stations,'2026-10-13T00:00',
                                   [self.real for _ in u.MODELS],datetime(2026,10,13,tzinfo=timezone.utc))
         self.assertEqual(snapshot['dates'],['2026-10-13'])
         for model in snapshot['models']:
-            self.assertEqual(model['daily']['2026-10-13'],[None,None,None])
+            values=model['daily']['2026-10-13']
+            self.assertIsNone(values[0])
+            self.assertEqual(values[1],10)
+            self.assertGreater(values[2],10.5)
             self.assertEqual(model['quality']['2026-10-13'][0]['reported_hours'],10)
         self.assertEqual(len(snapshot['daylight']['2026-10-13']),3)
+
+    def test_missing_model_cannot_silently_shift_model_identity(self):
+        with self.assertRaisesRegex(ValueError,'Missing model or station'):
+            u.build_snapshot([], '2026-10-13T00:00', [], datetime.now(timezone.utc))
 
 class DaylightGeometry(unittest.TestCase):
     def duration(self,date,lat,lon):
