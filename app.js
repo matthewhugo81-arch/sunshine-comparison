@@ -5,6 +5,8 @@ let forecast,stations,coastline;
 const dateLabel=date=>new Intl.DateTimeFormat('en-GB',{weekday:'short',day:'numeric',month:'short',year:'numeric',timeZone:'UTC'}).format(new Date(`${date}T12:00:00Z`));
 const timeLabel=time=>new Intl.DateTimeFormat('en-GB',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit',hourCycle:'h23',timeZone:'UTC'}).format(new Date(time))+' UTC';
 const hours=value=>Number.isFinite(value)?String(Math.floor(value+.5)):'—';
+const daylightLabel=value=>{const minutes=Math.round(value*60);return `${Math.floor(minutes/60)}h ${String(minutes%60).padStart(2,'0')}m`;};
+const daylightInfo=(date,i)=>{const d=forecast.daylight[date][i];return `Daylight ${daylightLabel(d.daylight_hours)} · Sunrise ${d.sunrise_utc}, sunset ${d.sunset_utc} UTC`;};
 const shownModels=()=>forecast.models.filter(m=>$('model-select').value==='all'||m.id===$('model-select').value);
 const available=(m,date)=>Array.isArray(m.daily[date])&&m.daily[date].length===stations.length&&m.daily[date].every(v=>v===null||Number.isFinite(v));
 const assessment=(m,date,i)=>m.quality[date][i];
@@ -29,8 +31,8 @@ function makeMap(model,date){
     const value=model.daily[date][i],label=valueLabel(model,date,i);const [x,y]=s.point,[lx,ly]=s.label;
     const name=$('label-select').value==='region'?s.region:s.short;
     const width=Math.max(Number.isFinite(value)?68:84,name.length*7.9+18);
-    const g=element('g',{class:'station-marker',tabindex:'0','aria-label':`${s.name}, ${s.region}: ${label}${Number.isFinite(value)?' hours':''}. ${reasonLabel(model,date,i)}`});
-    g.append(element('title',{},`${s.name} · ${s.region}\n${label}${Number.isFinite(value)?' sunshine hours':''}\n${reasonLabel(model,date,i)}\n${model.name} · ${dateLabel(date)}`));
+    const g=element('g',{class:'station-marker',tabindex:'0','aria-label':`${s.name}, ${s.region}: ${label}${Number.isFinite(value)?' hours':''}. ${daylightInfo(date,i)}. ${reasonLabel(model,date,i)}`});
+    g.append(element('title',{},`${s.name} · ${s.region}\n${label}${Number.isFinite(value)?' sunshine hours':''}\n${daylightInfo(date,i)}\n${reasonLabel(model,date,i)}\n${model.name} · ${dateLabel(date)}`));
     g.append(element('path',{d:`M${x},${y}L${lx},${ly}`,stroke:'#8295a2','stroke-width':1.4,fill:'none'}));
     g.append(element('circle',{cx:x,cy:y,r:3.4,fill:'#fff',stroke:'#172936','stroke-width':1}));
     g.append(element('rect',{x:lx-width/2,y:ly-33,width,height:65,rx:5,fill:'#172936',stroke:'#5c7282','stroke-width':1}));
@@ -77,8 +79,8 @@ function render(){
     $('maps').append(card);
   });
   const table=$('station-table'),thead=table.querySelector('thead'),tbody=table.querySelector('tbody');thead.replaceChildren();tbody.replaceChildren();
-  const header=html('tr');['Station','Region',...models.map(m=>m.name)].forEach((name,i)=>{const th=html('th',i>=2?'number':'',name);th.scope='col';header.append(th);});thead.append(header);
-  stations.forEach((station,i)=>{const row=html('tr');row.append(html('td','',station.name),html('td','region',station.region));models.forEach(model=>{const valid=available(model,date),review=valid&&model.daily[date][i]===null,td=html('td','number'+(valid?'':' missing')+(review?' review':''),valid?valueLabel(model,date,i):'—');if(!valid)td.setAttribute('aria-label','No complete source data');else td.title=reasonLabel(model,date,i);row.append(td);});tbody.append(row);});
+  const header=html('tr');['Station','Region','Daylight',...models.map(m=>m.name)].forEach((name,i)=>{const th=html('th',i>=3?'number':'',name);th.scope='col';header.append(th);});thead.append(header);
+  stations.forEach((station,i)=>{const row=html('tr'),daylight=html('td','daylight-cell',daylightLabel(forecast.daylight[date][i].daylight_hours));daylight.title=daylightInfo(date,i);row.append(html('td','',station.name),html('td','region',station.region),daylight);models.forEach(model=>{const valid=available(model,date),review=valid&&model.daily[date][i]===null,td=html('td','number'+(valid?'':' missing')+(review?' review':''),valid?valueLabel(model,date,i):'—');if(!valid)td.setAttribute('aria-label','No complete source data');else td.title=`${reasonLabel(model,date,i)} ${daylightInfo(date,i)}`;row.append(td);});tbody.append(row);});
   $('quality-summary').textContent=`Data checks and supporting forecasts · ${withheld} values withheld`;
   const qbody=$('quality-table').querySelector('tbody');qbody.replaceChildren();
   models.filter(m=>available(m,date)).forEach(model=>stations.forEach((station,i)=>{
@@ -91,7 +93,7 @@ function render(){
 async function init(){
   try{
     [forecast,stations,coastline]=await Promise.all(['data/forecast.json','data/stations.json','assets/coastline.json'].map(async path=>{const r=await fetch(path,{cache:'no-cache'});if(!r.ok)throw Error(`Unable to load ${path}`);return r.json();}));
-    if(forecast.schema_version!==2||forecast.station_count!==stations.length||!forecast.dates.length)throw Error('Quality-checked forecast data is incomplete');
+    if(forecast.schema_version!==3||forecast.station_count!==stations.length||!forecast.dates.length||!forecast.daylight)throw Error('Quality-checked forecast data is incomplete');
     const params=new URLSearchParams(location.search);
     forecast.models.forEach(model=>{const o=document.createElement('option');o.value=model.id;o.textContent=model.name;$('model-select').append(o);});
     if(forecast.models.some(m=>m.id===params.get('model')))$('model-select').value=params.get('model');

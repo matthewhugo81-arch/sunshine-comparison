@@ -1,0 +1,47 @@
+[
+  {
+    "name": "Kinloss",
+    "date": "2026-10-13",
+    "latitude": 57.64574,
+    "longitude": -3.56202,
+    "url": "https://aa.usno.navy.mil/api/rstt/oneday?date=2026-10-13&coords=57.64574%2C-3.56202&tz=0",
+    "sunrise_utc": "06:44",
+    "sunset_utc": "17:16"
+  },
+  {
+    "name": "Jersey",
+    "date": "2026-10-13",
+    "latitude": 49.208,
+    "longitude": -2.196,
+    "url": "https://aa.usno.navy.mil/api/rstt/oneday?date=2026-10-13&coords=49.208%2C-2.196&tz=0",
+    "sunrise_utc": "06:26",
+    "sunset_utc": "17:23"
+  },
+  {
+    "name": "Kinloss",
+    "date": "2026-06-21",
+    "latitude": 57.64574,
+    "longitude": -3.56202,
+    "url": "https://aa.usno.navy.mil/api/rstt/oneday?date=2026-06-21&coords=57.64574%2C-3.56202&tz=0",
+    "sunrise_utc": "03:14",
+    "sunset_utc": "21:18"
+  },
+  {
+    "name": "Kinloss",
+    "date": "2026-12-21",
+    "latitude": 57.64574,
+    "longitude": -3.56202,
+    "url": "https://aa.usno.navy.mil/api/rstt/oneday?date=2026-12-21&coords=57.64574%2C-3.56202&tz=0",
+    "sunrise_utc": "08:56",
+    "sunset_utc": "15:29"
+  },
+  {
+    "name": "Heathrow",
+    "date": "2028-02-29",
+    "latitude": 51.47895,
+    "longitude": -0.45158,
+    "url": "https://aa.usno.navy.mil/api/rstt/oneday?date=2028-02-29&coords=51.47895%2C-0.45158&tz=0",
+    "sunrise_utc": "06:48",
+    "sunset_utc": "17:41"
+  }
+]

@@ -32,7 +32,17 @@ The updater validates model-specific requests, UTC timestamp continuity, station
 units, all 24 accumulation intervals, physical ranges, and supporting data completeness.
 Direct horizontal radiation must not exceed total horizontal radiation; diffuse radiation must
 not be materially negative. A 2 W/m² tolerance permits rounding noise. Sunshine must fit NOAA's
-approximate apparent daylight window, allowing 10 minutes of geometric tolerance.
+apparent daylight window, allowing 2 minutes of geometry/refraction tolerance.
+
+Sunrise and sunset use the full Gregorian date and NOAA/Meeus Julian-century equations,
+iterated at each event; leap years and changes of season are automatic. Station-table daylight
+uses each named station's coordinates. Quality checks use the corresponding model grid-cell
+coordinates. The horizon is flat at sea level with standard refraction (90.833° zenith),
+excluding twilight, terrain shading and local obstructions. Calculations stay in UTC throughout.
+Daylight appears in hours and minutes; sunshine is checked before rounding to whole hours.
+Thus an 11-hour display can be valid for an unrounded 10.6-hour forecast within a 10h 50m day.
+Five independent US Naval Observatory reference cases cover north/south locations, summer,
+winter, autumn and a leap day. Sunrise and sunset agree within one minute in those cases.
 
 The following **unvalidated conservative review screens** also withhold amounts:
 
@@ -50,7 +60,7 @@ cloud uses averages of the preceding-hour endpoints weighted by daylight overlap
 `data/audit-2026-10-09.json` preserves the original evidence independently of later forecast refreshes.
 The regression fixture includes actual Kinloss, Bishopton and Cork data from that audit.
 See the [provider algorithm](https://github.com/open-meteo/open-meteo/blob/f625df2c2b2d29d7837b1c71660fb226b1864f9b/Sources/App/Helper/Solar/SunRiseSet.swift)
-and [NOAA solar geometry](https://gml.noaa.gov/grad/solcalc/solareqns.PDF).
+and [NOAA solar geometry](https://gml.noaa.gov/grad/solcalc/calcdetails.html).
 The generic RoI row is excluded until a station or area-averaging definition is supplied.
 Station-coordinate sources are recorded in `data/stations.json`; map geometry is Natural Earth 1:10m,
 simplified and projected with a Lambert conformal conic projection.

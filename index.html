@@ -8,7 +8,7 @@
   <title>Sunshine comparison</title>
   <link rel="icon" href="assets/sun.svg" type="image/svg+xml">
   <link rel="stylesheet" href="styles.css?v=20261009-quality1">
-  <script src="app.js?v=20261009-quality2" defer></script>
+  <script src="app.js?v=20261009-daylight1" defer></script>
 </head>
 <body>
   <header class="masthead">
@@ -29,8 +29,9 @@
     <p id="alert" class="alert" role="status" hidden></p>
     <section class="day-heading" aria-live="polite"><h2 id="day-title">Loading…</h2><p id="coverage"></p></section>
     <section id="maps" class="maps" aria-label="Sunshine forecast maps"></section>
-    <section class="table-section">
+    <section class="table-section" id="station-comparison">
       <div class="section-heading"><h2>Station comparison</h2><span>Hours · Review = withheld · — = no complete source data</span></div>
+      <p style="font-size:12px;margin:0 0 9px;color:var(--muted)">Daylight is recalculated for each station and selected date. Hover over a daylight value or map marker for sunrise and sunset in UTC. Sunshine is rounded only after the daylight checks.</p>
       <div class="table-scroll" tabindex="0" aria-label="Station comparison table; scroll horizontally on small screens"><table id="station-table"><caption class="sr-only">Sunshine hours at each station for the selected forecast day</caption><thead></thead><tbody></tbody></table></div>
     </section>
     <details class="method" id="quality-checks">
@@ -45,7 +46,8 @@
       <summary>About the data and comparison with ePD</summary>
       <div class="method-body">
         <p>These are <strong>experimental radiation-derived estimates</strong> from Open-Meteo, not native model sunshine-duration fields. Its approximation ramps from no sunshine at 60 W/m² to full sunshine at 180 W/m² of direct normal irradiance, centred on the 120 W/m² sunshine threshold. Applying this to hourly mean radiation cannot resolve intermittent sunshine and can overstate duration in broken cloud. Hourly API values may be interpolated from longer model intervals.</p>
-        <p>Each model uses the same 00 UTC forecast cycle. All 24 sunshine intervals must be present at every station before a day enters the dropdown. At each station, incomplete supporting data, invalid units/ranges, material radiation inconsistency, or sunshine outside astronomical daylight withholds the amount. A 2 W/m² tolerance allows radiation rounding noise and a 10-minute tolerance allows approximate sunrise/sunset geometry.</p>
+        <p>Each model uses the same 00 UTC forecast cycle. All 24 sunshine intervals must be present at every station before a day enters the dropdown. At each station, incomplete supporting data, invalid units/ranges, material radiation inconsistency, or sunshine outside astronomical daylight withholds the amount. A 2 W/m² tolerance allows radiation rounding noise and a 2-minute tolerance allows solar geometry/refraction differences.</p>
+        <p><strong>Daylight varies with the exact date and location.</strong> Sunrise and sunset are calculated from the full year/month/day and latitude/longitude, including leap years. The station table uses the named station coordinates; model checks use the sampled grid coordinates. Both use the same <a href="https://gml.noaa.gov/grad/solcalc/calcdetails.html">NOAA/Meeus solar equations</a>, standard refraction and a flat sea-level horizon. Twilight is excluded. Hills, obstructions and unusual refraction are not modelled. Sunrise and sunset are in UTC, so clock changes cannot add sunshine. The bound applies to unrounded values: for example, 10.6 hours of sunshine may display as 11 while still fitting a 10h 50m day.</p>
         <p>Conservative review flags also withhold: sunshine at least 90% of daylight with mean cloud at least 25%; sunshine at least 75% of daylight with at least 1 mm of rain in daylight intervals; or two or more hours with at least 45 minutes of sunshine and at least 80% low cloud. These thresholds are transparent review rules, <strong>not an observation-validated correction</strong>. They may flag thin cloud or showers that allow sunshine.</p>
         <p>Values cover <strong>00:00–24:00 UTC</strong>. They are rounded once, after summing the day; zero can mean less than half an hour. Forecasts are sampled at the nearest model grid cell to each station. Regions are the supplied labels, not regional averages.</p>
         <p>These are single forecasts. They do not reproduce ePD’s 10th and 90th percentiles, and disagreement between models is not an equivalent probability range. The estimates have not been calibrated to ePD or validated here against observations. A 500 hPa / pressure chart is useful context but cannot determine a station’s daily sunshine total; AIFS and IFS, and different run times, are distinct forecasts.</p>

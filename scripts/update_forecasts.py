@@ -9,7 +9,7 @@ import os
 import urllib.request
 import urllib.parse
 import urllib.error
-import calendar
+from functools import lru_cache
 
 ROOT = Path(__file__).resolve().parents[1]
 MODELS = [
@@ -23,28 +23,63 @@ VARIABLES = ['sunshine_duration','shortwave_radiation','direct_radiation','diffu
              'cloud_cover_high','precipitation']
 UNITS = {v: ('s' if v=='sunshine_duration' else '%' if v.startswith('cloud_cover') else
               'mm' if v=='precipitation' else 'W/m²') for v in VARIABLES}
-QC_VERSION = '2026-10-09.1'
+QC_VERSION = '2026-10-09.2'
 
 def finite(value):
     return not isinstance(value,bool) and isinstance(value,(float,int)) and math.isfinite(value)
 
-def solar_window(date, latitude, longitude):
-    """Approximate apparent sunrise/set UTC minutes, NOAA fractional-year equations.
+def solar_terms(julian_day):
+    """Solar declination (radians) and equation of time (minutes), NOAA/Meeus.
 
-    Used only as a generous physical bound and review screen, never to change sunshine.
-    Source: https://gml.noaa.gov/grad/solcalc/solareqns.PDF
+    Equations: https://gml.noaa.gov/grad/solcalc/main.js
+    Full Gregorian date/Julian century, including year and leap days.
     """
+    rad=math.radians;sin=math.sin;cos=math.cos
+    t=(julian_day-2451545)/36525
+    lon=(280.46646+t*(36000.76983+t*.0003032))%360
+    anomaly=rad(357.52911+t*(35999.05029-.0001537*t))
+    eccentricity=.016708634-t*(.000042037+.0000001267*t)
+    centre=(sin(anomaly)*(1.914602-t*(.004817+.000014*t))
+            +sin(2*anomaly)*(.019993-.000101*t)+sin(3*anomaly)*.000289)
+    omega=rad(125.04-1934.136*t)
+    apparent=rad(lon+centre-.00569-.00478*sin(omega))
+    seconds=21.448-t*(46.8150+t*(.00059-t*.001813))
+    obliquity=rad(23+(26+seconds/60)/60+.00256*cos(omega))
+    declination=math.asin(sin(obliquity)*sin(apparent))
+    y=math.tan(obliquity/2)**2;longitude=rad(lon)
+    equation=4*math.degrees(y*sin(2*longitude)-2*eccentricity*sin(anomaly)
+              +4*eccentricity*y*sin(anomaly)*cos(2*longitude)
+              -.5*y*y*sin(4*longitude)-1.25*eccentricity**2*sin(2*anomaly))
+    return declination,equation
+
+@lru_cache(maxsize=8192)
+def solar_window(date, latitude, longitude):
+    """Apparent sunrise/set in UTC minutes for a UK/Ireland station and exact date.
+
+    Flat sea-level horizon, 90.833° zenith (solar disc plus standard refraction),
+    excludes twilight. Iterates solar coordinates to each event separately.
+    Not intended for polar sites; fail explicitly if there is no daily rise/set.
+    """
+    if not -66<=latitude<=66 or not -180<=longitude<=180:
+        raise ValueError('Solar calculation is scoped to non-polar sites')
     day=datetime.fromisoformat(date)
-    gamma=2*math.pi/(366 if calendar.isleap(day.year) else 365)*(day.timetuple().tm_yday-1)
-    eq=229.18*(.000075+.001868*math.cos(gamma)-.032077*math.sin(gamma)
-               -.014615*math.cos(2*gamma)-.040849*math.sin(2*gamma))
-    dec=(.006918-.399912*math.cos(gamma)+.070257*math.sin(gamma)-.006758*math.cos(2*gamma)
-         +.000907*math.sin(2*gamma)-.002697*math.cos(3*gamma)+.00148*math.sin(3*gamma))
+    jd=(day-datetime(2000,1,1)).total_seconds()/86400+2451544.5
     lat=math.radians(latitude)
-    arg=math.cos(math.radians(90.833))/(math.cos(lat)*math.cos(dec))-math.tan(lat)*math.tan(dec)
-    half=math.degrees(math.acos(max(-1,min(1,arg))))*4
-    noon=720-4*longitude-eq
-    return noon-half,noon+half
+    def event(sign):
+        minute=720-4*longitude
+        for _ in range(3):
+            dec,eq=solar_terms(jd+minute/1440)
+            arg=math.cos(math.radians(90.833))/(math.cos(lat)*math.cos(dec))-math.tan(lat)*math.tan(dec)
+            if not -1<arg<1:raise ValueError('No daily sunrise/sunset at this latitude')
+            minute=720-4*(longitude+sign*math.degrees(math.acos(arg)))-eq
+        return minute
+    return event(1),event(-1)
+
+def daylight_details(date, latitude, longitude):
+    rise,setting=solar_window(date,latitude,longitude)
+    clock=lambda minute: f'{int(math.floor(minute+.5))//60:02d}:{int(math.floor(minute+.5))%60:02d}'
+    return {'sunrise_utc':clock(rise),'sunset_utc':clock(setting),
+            'daylight_hours':round((setting-rise)/60,6)}
 
 def assess_day(hourly, date, latitude, longitude):
     """Reject physical failures; separately withhold conservative review flags.
@@ -71,12 +106,12 @@ def assess_day(hourly, date, latitude, longitude):
                 evidence.append({'time':stamp,'total_w_m2':ghi,'direct_w_m2':direct,'diffuse_w_m2':diffuse})
             if any(not 0<=row[v]<=100 for v in VARIABLES if v.startswith('cloud_cover')) or row['precipitation']<0 or row['direct_normal_irradiance']<-2:
                 failures.append('Invalid cloud, rain or radiation range')
-            # Ten-minute tolerance for approximate solar geometry and grid precision.
+            # Two-minute tolerance for solar geometry/refraction, before display rounding.
             possible=max(0,min(h*60,setting)-max((h-1)*60,rise))
-            if row['sunshine_duration']>possible*60+600:
+            if row['sunshine_duration']>possible*60+120:
                 failures.append('Sunshine outside the daylight window')
         if evidence:failures.append('Direct/diffuse radiation fails energy consistency')
-    if total>daylight+1/6:failures.append('Sunshine exceeds astronomical daylight')
+    if total>daylight+2/60:failures.append('Sunshine exceeds astronomical daylight')
     result={'status':'withheld' if failures else 'experimental','reported_hours':round(total,5),
             'daylight_hours':round(daylight,3),'reasons':list(dict.fromkeys(failures)),
             'radiation_failures':evidence}
@@ -182,7 +217,9 @@ def build_snapshot(stations,run,responses,now):
     today=now.date().isoformat()
     dates=sorted({date for m in models for date in m['daily'] if date>=today})
     if not dates:raise ValueError('No current/future complete days')
-    return {'schema_version':2,'quality_version':QC_VERSION,'validation_status':'experimental; not observation-validated',
+    daylight={date:[daylight_details(date,s['latitude'],s['longitude']) for s in stations] for date in dates}
+    return {'schema_version':3,'quality_version':QC_VERSION,'validation_status':'experimental; not observation-validated',
+            'daylight':daylight,'daylight_method':'NOAA/Meeus apparent sunrise–sunset; station coordinates, exact Gregorian date, UTC, flat sea-level horizon; excludes twilight.',
             'updated_at':now.isoformat(),'run':run+'Z','dates':dates,
             'period':'00:00–24:00 UTC','rounding':'nearest hour, halves up','models':models,
             'station_count':len(stations),'source':'Open-Meteo Single Runs API',

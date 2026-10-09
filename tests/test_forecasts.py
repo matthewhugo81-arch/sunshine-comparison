@@ -94,12 +94,49 @@ class QualityChecks(unittest.TestCase):
         self.assertGreater((jun_s-jun_r)/60,17)
 
     def test_snapshot_keeps_review_as_null_not_zero_or_raw_amount(self):
-        stations=[{'name':r['station']} for r in self.real]
+        stations=[{'name':r['station'],'latitude':r['latitude'],'longitude':r['longitude']} for r in self.real]
         snapshot=u.build_snapshot(stations,'2026-10-13T00:00',
                                   [self.real for _ in u.MODELS],datetime(2026,10,13,tzinfo=timezone.utc))
         self.assertEqual(snapshot['dates'],['2026-10-13'])
         for model in snapshot['models']:
             self.assertEqual(model['daily']['2026-10-13'],[None,None,None])
             self.assertEqual(model['quality']['2026-10-13'][0]['reported_hours'],10)
+        self.assertEqual(len(snapshot['daylight']['2026-10-13']),3)
+
+class DaylightGeometry(unittest.TestCase):
+    def duration(self,date,lat,lon):
+        rise,setting=u.solar_window(date,lat,lon)
+        return setting-rise
+
+    def test_independent_usno_sunrise_and_sunset(self):
+        cases=json.loads((Path(__file__).parent/'fixtures/daylight-usno.json').read_text())
+        for case in cases:
+            with self.subTest(station=case['name'],date=case['date']):
+                calculated=u.solar_window(case['date'],case['latitude'],case['longitude'])
+                for value,key in zip(calculated,['sunrise_utc','sunset_utc']):
+                    hour,minute=map(int,case[key].split(':'))
+                    self.assertAlmostEqual(value,hour*60+minute,delta=1)
+
+    def test_day_to_day_and_week_to_week_change(self):
+        lengths=[self.duration(date,57.64574,-3.56202) for date in ['2026-10-13','2026-10-14','2026-10-20']]
+        self.assertGreater(lengths[0],lengths[1])
+        self.assertGreater(lengths[1],lengths[2])
+        self.assertGreater(lengths[0]-lengths[2],20)
+
+    def test_north_south_seasonal_reversal(self):
+        for date,north_longer in [('2026-06-21',True),('2026-12-21',False)]:
+            north=self.duration(date,57.64574,-3.56202);south=self.duration(date,49.208,-2.196)
+            self.assertEqual(north>south,north_longer)
+
+    def test_longitude_changes_solar_clock(self):
+        east=u.solar_window('2026-10-13',53,0);west=u.solar_window('2026-10-13',53,-8)
+        self.assertAlmostEqual(west[0]-east[0],32,delta=1)
+        self.assertAlmostEqual(west[1]-east[1],32,delta=1)
+
+    def test_clock_change_cannot_add_daylight(self):
+        # UK clocks change on 25 October 2026; every calculation stays in UTC.
+        before=self.duration('2026-10-24',51.47895,-.45158)
+        after=self.duration('2026-10-25',51.47895,-.45158)
+        self.assertTrue(0<before-after<5)
 
 if __name__=='__main__':unittest.main()
