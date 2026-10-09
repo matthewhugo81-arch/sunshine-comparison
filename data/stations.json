@@ -1,0 +1,322 @@
+[
+  {
+    "name": "Dyce",
+    "region": "East Scotland",
+    "latitude": 57.20506,
+    "longitude": -2.2037,
+    "short": "Dyce",
+    "coordinate_source": "https://www.metoffice.gov.uk/research/climate/maps-and-data/uk-synoptic-and-climate-stations",
+    "point": [
+      637.92,
+      228.43
+    ],
+    "label": [
+      682.61,
+      210.97
+    ]
+  },
+  {
+    "name": "Glasgow (Bishopton)",
+    "region": "West Scotland",
+    "latitude": 55.9068,
+    "longitude": -4.53122,
+    "short": "Bishopton",
+    "coordinate_source": "https://www.metoffice.gov.uk/research/climate/maps-and-data/uk-synoptic-and-climate-stations",
+    "point": [
+      497.0,
+      373.62
+    ],
+    "label": [
+      431.1,
+      351.22
+    ]
+  },
+  {
+    "name": "Kinloss",
+    "region": "North Scotland",
+    "latitude": 57.64574,
+    "longitude": -3.56202,
+    "short": "Kinloss",
+    "coordinate_source": "https://www.metoffice.gov.uk/research/climate/maps-and-data/uk-synoptic-and-climate-stations",
+    "point": [
+      556.01,
+      180.82
+    ],
+    "label": [
+      530.0,
+      128.25
+    ]
+  },
+  {
+    "name": "Edinburgh Gogarbank",
+    "region": "South Scotland",
+    "latitude": 55.92838,
+    "longitude": -3.34294,
+    "short": "Gogarbank",
+    "coordinate_source": "https://www.metoffice.gov.uk/research/climate/maps-and-data/uk-synoptic-and-climate-stations",
+    "point": [
+      570.8,
+      371.17
+    ],
+    "label": [
+      610.0,
+      331.65
+    ]
+  },
+  {
+    "name": "Rostherne No. 2",
+    "region": "NW England",
+    "latitude": 53.3598,
+    "longitude": -2.38053,
+    "short": "Rostherne",
+    "coordinate_source": "https://www.metoffice.gov.uk/research/climate/maps-and-data/uk-synoptic-and-climate-stations",
+    "point": [
+      637.06,
+      654.69
+    ],
+    "label": [
+      596.52,
+      684.23
+    ]
+  },
+  {
+    "name": "Albemarle",
+    "region": "NE England",
+    "latitude": 55.01972,
+    "longitude": -1.88012,
+    "short": "Albemarle",
+    "coordinate_source": "https://www.metoffice.gov.uk/research/climate/maps-and-data/uk-synoptic-and-climate-stations",
+    "point": [
+      664.62,
+      470.02
+    ],
+    "label": [
+      739.36,
+      463.8
+    ]
+  },
+  {
+    "name": "Aldergrove",
+    "region": "N Ireland",
+    "latitude": 54.66357,
+    "longitude": -6.22436,
+    "short": "Aldergrove",
+    "coordinate_source": "https://www.metoffice.gov.uk/research/climate/maps-and-data/uk-synoptic-and-climate-stations",
+    "point": [
+      387.51,
+      509.25
+    ],
+    "label": [
+      338.96,
+      481.25
+    ]
+  },
+  {
+    "name": "Shannon Airport",
+    "region": "Shannon / W. ROI",
+    "latitude": 52.69,
+    "longitude": -8.918,
+    "short": "Shannon",
+    "coordinate_source": "https://www.epa.ie/publications/compliance--enforcement/air/air-guidance-notes/EPA-Air-Dispersion-Modelling-Guidance-Note-%28AG4%29-2020.pdf",
+    "point": [
+      199.97,
+      718.65
+    ],
+    "label": [
+      152.97,
+      689.58
+    ]
+  },
+  {
+    "name": "Dublin Airport",
+    "region": "Dublin / E. ROI",
+    "latitude": 53.42778,
+    "longitude": -6.24083,
+    "short": "Dublin",
+    "coordinate_source": "https://www.met.ie/cms/assets/uploads/2023/03/Mateus-and-Coonan_2023_Estimation-of-point-rainfall-frequencies-in-Ireland_FINAL.pdf",
+    "point": [
+      382.12,
+      646.04
+    ],
+    "label": [
+      377.39,
+      671.14
+    ]
+  },
+  {
+    "name": "St. Athan",
+    "region": "Wales",
+    "latitude": 51.40497,
+    "longitude": -3.43952,
+    "short": "St Athan",
+    "coordinate_source": "https://www.metoffice.gov.uk/research/climate/maps-and-data/uk-synoptic-and-climate-stations",
+    "point": [
+      568.77,
+      872.41
+    ],
+    "label": [
+      485.24,
+      850.73
+    ]
+  },
+  {
+    "name": "Winterbourne No. 2",
+    "region": "Midlands",
+    "latitude": 52.45602,
+    "longitude": -1.92619,
+    "short": "Winterbourne",
+    "coordinate_source": "https://www.metoffice.gov.uk/research/climate/maps-and-data/uk-synoptic-and-climate-stations",
+    "point": [
+      670.02,
+      754.0
+    ],
+    "label": [
+      641.94,
+      777.58
+    ]
+  },
+  {
+    "name": "Wattisham",
+    "region": "East Anglia",
+    "latitude": 52.12342,
+    "longitude": 0.9591,
+    "short": "Wattisham",
+    "coordinate_source": "https://www.metoffice.gov.uk/research/climate/maps-and-data/uk-synoptic-and-climate-stations",
+    "point": [
+      867.19,
+      781.09
+    ],
+    "label": [
+      890.56,
+      737.54
+    ]
+  },
+  {
+    "name": "St. James’ Park",
+    "region": "Greater London",
+    "latitude": 51.50476,
+    "longitude": -0.13109,
+    "short": "St James's",
+    "coordinate_source": "https://www.metoffice.gov.uk/api/assets/file/uk_synop_station_list_jul24pdf?prefix=assets",
+    "point": [
+      796.89,
+      854.2
+    ],
+    "label": [
+      880.82,
+      884.98
+    ]
+  },
+  {
+    "name": "Heathrow",
+    "region": "SE England",
+    "latitude": 51.47895,
+    "longitude": -0.45158,
+    "short": "Heathrow",
+    "coordinate_source": "https://www.metoffice.gov.uk/research/climate/maps-and-data/uk-synoptic-and-climate-stations",
+    "point": [
+      774.95,
+      858.21
+    ],
+    "label": [
+      779.55,
+      811.24
+    ]
+  },
+  {
+    "name": "Middle Wallop",
+    "region": "South Cen England",
+    "latitude": 51.14934,
+    "longitude": -1.56851,
+    "short": "Middle Wallop",
+    "coordinate_source": "https://www.metoffice.gov.uk/research/climate/maps-and-data/uk-synoptic-and-climate-stations",
+    "point": [
+      699.14,
+      898.01
+    ],
+    "label": [
+      677.77,
+      955.23
+    ]
+  },
+  {
+    "name": "Plymouth, Mountbatten",
+    "region": "SW England",
+    "latitude": 50.35435,
+    "longitude": -4.11986,
+    "short": "Plymouth",
+    "coordinate_source": "https://www.metoffice.gov.uk/research/climate/maps-and-data/uk-synoptic-and-climate-stations",
+    "point": [
+      521.51,
+      989.12
+    ],
+    "label": [
+      483.66,
+      1022.7
+    ]
+  },
+  {
+    "name": "Cork Airport",
+    "region": "Cork",
+    "latitude": 51.84722,
+    "longitude": -8.48611,
+    "short": "Cork",
+    "coordinate_source": "https://www.met.ie/cms/assets/uploads/2023/03/Mateus-and-Coonan_2023_Estimation-of-point-rainfall-frequencies-in-Ireland_FINAL.pdf",
+    "point": [
+      222.99,
+      813.79
+    ],
+    "label": [
+      196.62,
+      833.96
+    ]
+  },
+  {
+    "name": "Bramham (Cdl)",
+    "region": "North Cen England",
+    "latitude": 53.86866,
+    "longitude": -1.31722,
+    "short": "Bramham",
+    "coordinate_source": "https://www.metoffice.gov.uk/research/climate/maps-and-data/uk-synoptic-and-climate-stations",
+    "point": [
+      705.18,
+      596.23
+    ],
+    "label": [
+      747.93,
+      577.62
+    ]
+  },
+  {
+    "name": "Ronaldsway",
+    "region": "Isle of Man",
+    "latitude": 54.08507,
+    "longitude": -4.6307,
+    "short": "Ronaldsway",
+    "coordinate_source": "https://www.metoffice.gov.uk/research/climate/maps-and-data/uk-synoptic-and-climate-stations",
+    "point": [
+      489.02,
+      575.39
+    ],
+    "label": [
+      484.48,
+      579.24
+    ]
+  },
+  {
+    "name": "Jersey Airport",
+    "region": "Channel Islands",
+    "latitude": 49.208,
+    "longitude": -2.196,
+    "short": "Jersey",
+    "coordinate_source": "https://www.metoffice.gov.uk/research/climate/maps-and-data/uk-synoptic-and-climate-stations",
+    "point": [
+      661.0,
+      1114.79
+    ],
+    "label": [
+      701.22,
+      1131.18
+    ]
+  }
+]

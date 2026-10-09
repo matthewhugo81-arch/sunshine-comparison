@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Compare daily sunshine hours from ECMWF, GFS, UKMO Global and UKV at 20 UK and Irish weather stations.">
+  <meta name="theme-color" content="#172d3b">
+  <title>Sunshine comparison</title>
+  <link rel="icon" href="assets/sun.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="styles.css">
+  <script src="app.js" defer></script>
+</head>
+<body>
+  <header class="masthead">
+    <div class="shell heading-row">
+      <div class="brand-icon" aria-hidden="true">☀</div>
+      <div><p class="eyebrow">UK · IRELAND · ISLANDS</p><h1>Sunshine comparison</h1><p class="intro">Daily sunshine hours, model by model.</p></div>
+      <div class="period-pill">24-hour totals <span>00–24 UTC · nearest hour</span></div>
+    </div>
+  </header>
+  <main class="shell">
+    <section class="toolbar" aria-label="Forecast controls">
+      <div class="field date-field"><label for="forecast-date">Forecast date</label><div class="date-controls"><button id="previous" class="step" aria-label="Previous forecast day" disabled>←</button><select id="forecast-date" disabled><option>Loading forecasts…</option></select><button id="next" class="step" aria-label="Next forecast day" disabled>→</button></div></div>
+      <div class="field"><label for="model-select">Models</label><select id="model-select" disabled><option value="all">Compare all four</option></select></div>
+      <div class="field"><label for="label-select">Map labels</label><select id="label-select"><option value="station">Stations</option><option value="region">Regions</option></select></div>
+    </section>
+    <div class="forecast-meta"><p id="run-info">Loading forecast information…</p><p id="updated-info"></p></div>
+    <p id="alert" class="alert" role="status" hidden></p>
+    <section class="day-heading" aria-live="polite"><div><p class="eyebrow">SUNSHINE HOURS</p><h2 id="day-title">Loading…</h2></div><p id="coverage"></p></section>
+    <section id="maps" class="maps" aria-label="Sunshine forecast maps"></section>
+    <section class="table-section">
+      <div class="section-heading"><h2>Station comparison</h2><span>Hours, rounded to the nearest whole hour</span></div>
+      <div class="table-scroll" tabindex="0" aria-label="Station comparison table; scroll horizontally on small screens"><table id="station-table"><caption class="sr-only">Sunshine hours at each station for the selected forecast day</caption><thead></thead><tbody></tbody></table></div>
+    </section>
+    <details class="method">
+      <summary>About the data and comparison with ePD</summary>
+      <div class="method-body">
+        <p>These are <strong>radiation-derived sunshine estimates</strong> from Open-Meteo, using the direct normal irradiance threshold of 120 W/m². Each model uses the same 00 UTC forecast cycle. All 24 hourly intervals must be present at every station before a daily map is shown.</p>
+        <p>Values cover <strong>00:00–24:00 UTC</strong>. They are rounded once, after summing the day; zero can mean less than half an hour. Forecasts are sampled at the nearest model grid cell to each station. Regions are the supplied labels, not regional averages.</p>
+        <p>These are single forecasts. They do not reproduce ePD’s 10th and 90th percentiles, and disagreement between models is not an equivalent probability range. The estimates have not been calibrated to ePD or validated here against observations.</p>
+        <p>The dropdown follows actual complete data. ECMWF and GFS usually extend much further than the two Met Office sunshine feeds. Missing or partial days are never counted as zero. The generic “RoI — Republic of Ireland” entry is awaiting a station or averaging definition.</p>
+        <p>Forecast updates are checked four times daily. The common 00 UTC cycle is used; if today’s cycle is not yet available from every model, the previous day’s cycle is retained. GitHub’s scheduled runs can be delayed.</p>
+        <p>Sources: <a href="https://open-meteo.com/en/docs/ecmwf-api">ECMWF IFS</a>, <a href="https://open-meteo.com/en/docs/gfs-api">GFS</a>, <a href="https://open-meteo.com/en/docs/ukmo-api">UKMO Global and UKV</a>, <a href="https://open-meteo.com/en/docs/single-runs-api">individual forecast runs</a>. <a href="data/forecast.json">Download underlying forecast data</a>.</p>
+      </div>
+    </details>
+  </main>
+  <footer class="shell footer"><p>ECMWF / NOAA / UK Met Office via <a href="https://open-meteo.com/">Open-Meteo</a> · Boundaries: Natural Earth</p><p>Derived maps and data: <a href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a> · <a href="https://github.com/matthewhugo81-arch/sunshine-comparison">View on GitHub</a></p></footer>
+  <noscript><p class="shell alert">JavaScript is needed to change dates and display these maps.</p></noscript>
+</body>
+</html>
