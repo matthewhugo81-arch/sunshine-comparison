@@ -7,8 +7,8 @@
   <meta name="theme-color" content="#172d3b">
   <title>Sunshine comparison</title>
   <link rel="icon" href="assets/sun.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="styles.css?v=20261009-quality1">
-  <script src="app.js?v=20261009-source3" defer></script>
+  <link rel="stylesheet" href="styles.css?v=20261010-epd1">
+  <script src="app.js?v=20261010-epd1" defer></script>
 </head>
 <body>
   <header class="masthead">
@@ -33,6 +33,12 @@
       <div class="section-heading"><h2>Station comparison</h2><span>Hours · — = missing data or physical source failure</span></div>
       <p style="font-size:12px;margin:0 0 9px;color:var(--muted)">Daylight is recalculated for each station and selected date. Hover over a daylight value or map marker for sunrise and sunset in UTC. Sunshine is rounded only after the daylight checks.</p>
       <div class="table-scroll" tabindex="0" aria-label="Station comparison table; scroll horizontally on small screens"><table id="station-table"><caption class="sr-only">Sunshine hours at each station for the selected forecast day</caption><thead></thead><tbody></tbody></table></div>
+    </section>
+    <section class="table-section" id="epd-comparison" hidden aria-labelledby="epd-heading">
+      <div class="section-heading"><h2 id="epd-heading">EPD probabilistic sunshine cross-check</h2><span>Independent forecast, not observations</span></div>
+      <p class="epd-note">Selected values from EPD maps supplied on 10 October 2026, manually transcribed for three clearly identifiable Scottish stations only. EPD numbers are rounded to whole hours; the original EPD run and period definitions are not verified. No other sites have been inferred, and no model numbers have been changed to match EPD. An amber value lies outside the indicated 10th–90th percentile interval after a ±0.5-hour display-rounding allowance; this is a <strong>review flag, not a confirmed forecast error</strong>. <a href="data/epd_reference.json">Reference data and provenance</a>.</p>
+      <p class="epd-summary" id="epd-summary"></p>
+      <div class="table-scroll" tabindex="0" aria-label="EPD percentile comparison; scroll horizontally on mobile"><table id="epd-table"><caption class="sr-only">Sunshine reference percentiles and deterministic model estimates at sampled stations</caption><thead></thead><tbody></tbody></table></div>
     </section>
     <details class="method" id="quality-checks">
       <summary id="quality-summary">Source checks and cloud / rain context</summary>
