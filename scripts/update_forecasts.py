@@ -117,7 +117,7 @@ def assess_day(hourly, date, latitude, longitude):
     if total>daylight+2/60:failures.append('Sunshine exceeds astronomical daylight')
     result={'status':'withheld' if failures else 'experimental','reported_hours':round(total,5),
             'daylight_hours':round(daylight,3),'reasons':list(dict.fromkeys(failures)),
-            'radiation_failures':evidence}
+            'radiation_failures':evidence,'review_flags':[]}
     if not failures or (len(failures)==1 and evidence):
         cloud_sum=low_sum=rain=weight_sum=0
         for h,(stamp,row) in enumerate(zip(stamps,rows),1):
@@ -139,6 +139,12 @@ def assess_day(hourly, date, latitude, longitude):
         low_mean=low_sum/weight_sum if weight_sum else 0
         result.update(daylight_cloud_percent=round(cloud_mean,1),daylight_low_cloud_percent=round(low_mean,1),
                       rain_in_daylight_intervals_mm=round(rain,2))
+        # This is an advisory cross-variable diagnostic, NOT a sunshine correction.
+        # Extensive thin/high cloud can coexist with bright sunshine.
+        if result['status']=='experimental' and cloud_mean>=90 and total>=0.8*daylight:
+            result['review_flags'].append(
+                'High sunshine (>=80% of daylight) alongside >=90% mean total cloud; '
+                'review radiation/cloud definition, including thin high cloud')
     return result
 
 def daily_total(hourly, date):
