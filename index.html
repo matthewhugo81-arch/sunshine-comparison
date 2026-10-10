@@ -3,12 +3,12 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="Compare daily sunshine hours from ECMWF, GFS, UKMO Global and UKV at 20 UK and Irish weather stations.">
+  <meta name="description" content="Compare daily sunshine hours and total, low, medium and high cloud from ECMWF, GFS, UKMO Global and UKV at 20 UK and Irish weather stations.">
   <meta name="theme-color" content="#172d3b">
   <title>Sunshine comparison</title>
   <link rel="icon" href="assets/sun.svg" type="image/svg+xml">
   <link rel="stylesheet" href="styles.css?v=20261010-epd1">
-  <script src="app.js?v=20261010-epd1" defer></script>
+  <script src="app.js?v=20261010-cloud2" defer></script>
 </head>
 <body>
   <header class="masthead">
@@ -19,7 +19,7 @@
     </div>
   </header>
   <main class="shell">
-    <p class="alert quality-notice"><strong>Provisional radiation estimates.</strong> The current feeds cannot establish reliable bright-sunshine totals. Cloud/rain rules do not alter these amounts; confirmed source failures remain gaps. <a href="#source-findings">Source investigation</a>.</p>
+    <p class="alert quality-notice"><strong>Provisional radiation estimates.</strong> The current feeds cannot establish reliable bright-sunshine totals. Total, low, medium and high cloud support the cross-checks, not arbitrary sunshine corrections; confirmed source failures remain gaps. <a href="#source-findings">Source investigation</a>.</p>
     <section class="toolbar" aria-label="Forecast controls">
       <div class="field date-field"><label for="forecast-date">Forecast date</label><div class="date-controls"><button id="previous" class="step" aria-label="Previous forecast day" disabled>←</button><select id="forecast-date" disabled><option>Loading forecasts…</option></select><button id="next" class="step" aria-label="Next forecast day" disabled>→</button></div></div>
       <div class="field"><label for="model-select">Models</label><select id="model-select" disabled><option value="all">Compare all four</option></select></div>
@@ -31,9 +31,20 @@
     <section id="maps" class="maps" aria-label="Sunshine forecast maps"></section>
     <section class="table-section" id="station-comparison">
       <div class="section-heading"><h2>Station comparison</h2><span>Hours · — = missing data or physical source failure</span></div>
-      <p style="font-size:12px;margin:0 0 9px;color:var(--muted)">Daylight is recalculated for each station and selected date. Hover over a daylight value or map marker for sunrise and sunset in UTC. Sunshine is rounded only after the daylight checks.</p>
+      <p style="font-size:12px;margin:0 0 9px;color:var(--muted)">Daylight is recalculated for each station and selected date. Hover over a map marker or sunshine value for the total, low, medium and high cloud context. Sunshine is rounded only after the daylight checks.</p>
       <div class="table-scroll" tabindex="0" aria-label="Station comparison table; scroll horizontally on small screens"><table id="station-table"><caption class="sr-only">Sunshine hours at each station for the selected forecast day</caption><thead></thead><tbody></tbody></table></div>
     </section>
+    <details class="method" id="cloud-comparison" open>
+      <summary>Cloud amounts and sunshine — total, low, medium and high</summary>
+      <div class="method-body">
+        <p>Every model supplies its own cloud fields from the same run and sampled grid cell as its sunshine estimate. These are <strong>sunrise-to-sunset time-weighted cloud percentages</strong>, not 24-hour averages. Hourly cloud endpoints are linearly interpolated over the daylight portion of each interval. This does not recover unresolved sub-hourly cloud changes.</p>
+        <p>Provider total cloud is retained separately: overlapping low, medium and high layers are <strong>not added together</strong>. Layer definitions can differ between models. High cloud is not automatically opaque; cloud fraction alone does not describe optical thickness. Cloud amounts support review, not a numerical correction to sunshine.</p>
+        <div class="field" style="max-width:360px"><label for="cloud-station">Compare cloud at station</label><select id="cloud-station" disabled></select></div>
+        <p id="cloud-summary" aria-live="polite" style="margin-top:12px"></p>
+        <p>Each cloud field requires complete valid daylight samples. A gap means missing or incomplete cloud, never clear sky. Missing rain or one cloud layer does not erase the others. Cloud forecasts can extend beyond sunshine forecasts; such dates are marked “cloud only” when a single model is selected. <a href="data/hourly.json">Hourly source fields</a> · <a href="https://github.com/matthewhugo81-arch/sunshine-comparison/blob/main/docs/cloud-method.md">Cloud calculation and limitations</a>.</p>
+      </div>
+      <div class="table-scroll" tabindex="0" aria-label="Cloud and sunshine comparison; scroll horizontally on mobile"><table id="cloud-table"><caption class="sr-only">Cloud and sunshine at the selected station, valid date and models</caption><thead><tr><th scope="col">Model</th><th scope="col">Sunshine (h)</th><th scope="col">Total (%)</th><th scope="col">Low (%)</th><th scope="col">Medium (%)</th><th scope="col">High (%)</th><th scope="col">Cloud coverage</th><th scope="col">Sunshine / cloud review</th></tr></thead><tbody></tbody></table></div>
+    </details>
     <section class="table-section" id="epd-comparison" hidden aria-labelledby="epd-heading">
       <div class="section-heading"><h2 id="epd-heading">EPD probabilistic sunshine cross-check</h2><span>Independent forecast, not observations</span></div>
       <p class="epd-note">Selected values from EPD maps supplied on 10 October 2026, manually transcribed for three clearly identifiable Scottish stations only. EPD numbers are rounded to whole hours; the original EPD run and period definitions are not verified. No other sites have been inferred, and no model numbers have been changed to match EPD. An amber value lies outside the indicated 10th–90th percentile interval after a ±0.5-hour display-rounding allowance; this is a <strong>review flag, not a confirmed forecast error</strong>. <a href="data/epd_reference.json">Reference data and provenance</a>.</p>
@@ -43,10 +54,10 @@
     <details class="method" id="quality-checks">
       <summary id="quality-summary">Source checks and cloud / rain context</summary>
       <div class="method-body">
-        <p>Only missing inputs or physical inconsistencies suppress an amount. Cloud and rain are context, not a reason to reduce or remove sunshine: thin cloud and showers can coexist with bright sunshine. Passing physical checks does not establish forecast accuracy. Cloud means use daylight-weighted averages of hourly endpoints; rain covers intervals that overlap daylight.</p>
-        <p>The provider column retains the original estimate for diagnosis, including failed inputs; it is not a corrected forecast. <a href="data/audit-2026-10-09.json">Original radiation evidence</a> · <a href="data/hourly.json">This run’s hourly source data</a></p>
+        <p>Only missing sunshine/radiation inputs or physical inconsistencies suppress a sunshine amount. Total, low, medium and high cloud are checked independently and used as daylight context for all four models. Extensive total or low/medium cloud alongside high sunshine prompts advisory review, not suppression. High-cloud amounts help interpret those flags, but do not establish optical thickness. The thresholds are uncalibrated and not probabilities or verified errors.</p>
+        <p>Cloud means integrate hourly endpoints over the actual daylight interval, including partial sunrise/sunset hours. They do not establish that the daily-mean cloud and sunshine occurred simultaneously. Rain covers whole intervals that overlap daylight. The provider column retains the original sunshine estimate for diagnosis, including failed inputs; it is not a corrected forecast. <a href="data/audit-2026-10-09.json">Original radiation evidence</a> · <a href="data/hourly.json">This run’s hourly source data</a></p>
       </div>
-      <div class="table-scroll"><table id="quality-table"><caption class="sr-only">Checks and source diagnostics for the selected date and models</caption><thead><tr><th>Station / model</th><th>Provider estimate (h)</th><th>Daylight (h)</th><th>Cloud / low cloud</th><th>Rain (mm)</th><th>Assessment</th></tr></thead><tbody></tbody></table></div>
+      <div class="table-scroll"><table id="quality-table"><caption class="sr-only">Checks and source diagnostics for the selected date and models</caption><thead><tr><th>Station / model</th><th>Provider estimate (h)</th><th>Daylight (h)</th><th>Total (%)</th><th>Low (%)</th><th>Medium (%)</th><th>High (%)</th><th>Rain (mm)</th><th>Cloud coverage</th><th>Assessment</th></tr></thead><tbody></tbody></table></div>
     </details>
     <details class="method" id="source-findings">
       <summary>Source investigation: why reliable replacement totals are still unavailable</summary>
@@ -62,11 +73,11 @@
       <summary>About the data and comparison with ePD</summary>
       <div class="method-body">
         <p>These are <strong>experimental radiation-derived estimates</strong> from Open-Meteo, not native model sunshine-duration fields. Its approximation ramps from no sunshine at 60 W/m² to full sunshine at 180 W/m² of direct normal irradiance, centred on the 120 W/m² sunshine threshold. Applying this to hourly mean radiation cannot resolve intermittent sunshine and can overstate duration in broken cloud. Hourly API values may be interpolated from longer model intervals.</p>
-        <p>Each model uses the same 00 UTC forecast cycle. All 24 sunshine intervals must be present at every station before a day enters the dropdown. At each station, incomplete supporting data, invalid units/ranges, material radiation inconsistency, or sunshine outside astronomical daylight withholds the amount. A 2 W/m² tolerance allows radiation rounding noise and a 2-minute tolerance allows solar geometry/refraction differences.</p>
-        <p><strong>Daylight varies with the exact date and location.</strong> Sunrise and sunset are calculated from the full year/month/day and latitude/longitude, including leap years. The station table uses the named station coordinates; model checks use the sampled grid coordinates. Both use the same <a href="https://gml.noaa.gov/grad/solcalc/calcdetails.html">NOAA/Meeus solar equations</a>, standard refraction and a flat sea-level horizon. Twilight is excluded. Hills, obstructions and unusual refraction are not modelled. Sunrise and sunset are in UTC, so clock changes cannot add sunshine. The bound applies to unrounded values: for example, 10.6 hours of sunshine may display as 11 while still fitting a 10h 50m day.</p>
-        <p>Values cover <strong>00:00–24:00 UTC</strong>. They are rounded once, after summing the day; zero can mean less than half an hour. Forecasts are sampled at the nearest model grid cell to each station. Regions are the supplied labels, not regional averages.</p>
+        <p>Each model uses the same 00 UTC forecast cycle. All 24 sunshine intervals must be present at every station before a sunshine day enters the dropdown. At each station, incomplete supporting radiation, invalid units/ranges, material radiation inconsistency, or sunshine outside astronomical daylight withholds the amount. Cloud-only dates are independently labelled. A 2 W/m² tolerance allows radiation rounding noise and a 2-minute tolerance allows solar geometry/refraction differences.</p>
+        <p><strong>Daylight varies with the exact date and location.</strong> Sunrise and sunset are calculated from the full year/month/day and latitude/longitude, including leap years. The station table uses the named station coordinates; model checks and cloud means use the sampled grid coordinates. Both use the same <a href="https://gml.noaa.gov/grad/solcalc/calcdetails.html">NOAA/Meeus solar equations</a>, standard refraction and a flat sea-level horizon. Twilight is excluded. Hills, obstructions and unusual refraction are not modelled. Sunrise and sunset are in UTC, so clock changes cannot add sunshine. The bound applies to unrounded values: for example, 10.6 hours of sunshine may display as 11 while still fitting a 10h 50m day.</p>
+        <p>Sunshine values cover <strong>00:00–24:00 UTC</strong>. They are rounded once, after summing the day; zero can mean less than half an hour. Cloud percentages cover daylight only. Forecasts are sampled at the nearest model grid cell to each station. Regions are the supplied labels, not regional averages.</p>
         <p>These are single forecasts. They do not reproduce ePD’s 10th and 90th percentiles, and disagreement between models is not an equivalent probability range. The estimates have not been calibrated to ePD or validated here against observations. A 500 hPa / pressure chart is useful context but cannot determine a station’s daily sunshine total; AIFS and IFS, and different run times, are distinct forecasts.</p>
-        <p>The dropdown follows actual complete data. ECMWF and GFS usually extend much further than the two Met Office sunshine feeds. Missing or partial days are never counted as zero. The generic “RoI — Republic of Ireland” entry is awaiting a station or averaging definition.</p>
+        <p>The dropdown follows actual complete sunshine or cloud data. ECMWF and GFS usually extend much further than the two Met Office sunshine feeds. Missing or partial days are never counted as zero. The generic “RoI — Republic of Ireland” entry is awaiting a station or averaging definition.</p>
         <p>Forecast updates are checked four times daily. The common 00 UTC cycle is used; if today’s cycle is not yet available from every model, the previous day’s cycle is retained. GitHub’s scheduled runs can be delayed.</p>
         <p>Sources: <a href="https://open-meteo.com/en/docs/ecmwf-api">ECMWF IFS</a>, <a href="https://open-meteo.com/en/docs/gfs-api">GFS</a>, <a href="https://open-meteo.com/en/docs/ukmo-api">UKMO Global and UKV</a>, <a href="https://open-meteo.com/en/docs/single-runs-api">individual forecast runs</a>. <a href="data/forecast.json">Download underlying forecast data</a>.</p>
       </div>
