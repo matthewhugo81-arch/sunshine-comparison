@@ -67,3 +67,9 @@ td.check-reason{white-space:normal;min-width:240px;max-width:470px;font-size:12p
   th,td{padding:8px 11px}
 }
 @media print{.masthead{background:white;color:var(--ink)}.toolbar,.download,.method{display:none}.shell{width:100%}.map-card{break-inside:avoid}.maps{gap:12px}.footer{font-size:8px}.period-pill{color:var(--ink)}.table-section{break-before:page}}
+
+/* Provisional EPD reference: an amber cell is a comparison prompt, never a correction. */
+.epd-note{font-size:12px;line-height:1.5;color:var(--muted);margin:0 0 9px}
+.epd-summary{font-size:12px;font-weight:650;margin:0 0 10px;color:var(--ink)}
+td.epd-outside{background:#fff1d2;color:#874700;font-weight:800}
+#epd-comparison[hidden]{display:none}

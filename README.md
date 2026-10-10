@@ -8,6 +8,27 @@ this does not repair the provider sunshine method. See [source findings](docs/so
 The date selector extends to the last complete day available from the selected model.
 Compare all four models, select one, switch between station/region labels, or save a map as PNG.
 
+## Forecaster cross-check with EPD (10–14 October 2026)
+
+`data/epd_reference.json` contains a *limited, manually transcribed* comparison
+from five user-supplied EPD probabilistic sunshine charts: the EPD central value,
+10th and 90th percentiles at three clearly matched Scottish stations. It is not
+the full EPD station inventory, an observation archive, or a calibration dataset;
+the source forecast run and accumulation window have not been independently
+checked. Any missing station/date is **unknown**, not zero.
+
+The dashboard now shows available reference values separately. It highlights
+deterministic estimates outside the displayed EPD percentile interval with a
+0.5-hour allowance for whole-hour rounding, but does not reweight, suppress or
+alter them. Even a large difference between two forecast systems does not by
+itself establish which is more accurate.
+
+The physical quality checks now also record **advisory** `review_flags` when
+daylight-average total cloud is at least 90% while estimated sunshine exceeds
+80% of astronomical daylight. Thin high cloud can coexist with sunshine: the
+flag is for review, **not** a reason to withhold or change a value. Underlying
+sunshine remains experimental until independently observation-validated.
+
 ## Data
 
 ECMWF IFS, GFS, UKMO Global and UKV are requested separately from Open-Meteo's Single Runs API.

@@ -1,0 +1,117 @@
+{
+  "schema_version": 1,
+  "source": "User-supplied EPD sunshine forecast map screenshots",
+  "supplied_date": "2026-10-10",
+  "status": "Limited manually transcribed forecast reference; NOT observations or a verified model run.",
+  "run": "unknown",
+  "period": "Daily sunshine hours on indicated calendar date",
+  "rounding": "All EPD map numbers are displayed to whole hours. Allow 0.5 h rounding uncertainty when comparing.",
+  "limitations": "Only three geographically matched stations are transcribed at high confidence. The images are not machine-readable source files; raw forecast cycle, percentile methodology and matching accumulation windows have not been independently verified. Blank cells are unknown, not zero. Do not calibrate or correct models from this sample.",
+  "entries": [
+    {
+      "date": "2026-10-10",
+      "station": "Kinloss",
+      "central": 3,
+      "p10": 0,
+      "p90": 6
+    },
+    {
+      "date": "2026-10-10",
+      "station": "Glasgow (Bishopton)",
+      "central": 5,
+      "p10": 3,
+      "p90": 7
+    },
+    {
+      "date": "2026-10-10",
+      "station": "Edinburgh Gogarbank",
+      "central": 6,
+      "p10": 4,
+      "p90": 8
+    },
+    {
+      "date": "2026-10-11",
+      "station": "Kinloss",
+      "central": 6,
+      "p10": 3,
+      "p90": 8
+    },
+    {
+      "date": "2026-10-11",
+      "station": "Glasgow (Bishopton)",
+      "central": 6,
+      "p10": 2,
+      "p90": 9
+    },
+    {
+      "date": "2026-10-11",
+      "station": "Edinburgh Gogarbank",
+      "central": 6,
+      "p10": 4,
+      "p90": 9
+    },
+    {
+      "date": "2026-10-12",
+      "station": "Kinloss",
+      "central": 0,
+      "p10": 0,
+      "p90": 4
+    },
+    {
+      "date": "2026-10-12",
+      "station": "Glasgow (Bishopton)",
+      "central": 0,
+      "p10": 0,
+      "p90": 2
+    },
+    {
+      "date": "2026-10-12",
+      "station": "Edinburgh Gogarbank",
+      "central": 0,
+      "p10": 0,
+      "p90": 1
+    },
+    {
+      "date": "2026-10-13",
+      "station": "Kinloss",
+      "central": 4,
+      "p10": 1,
+      "p90": 8
+    },
+    {
+      "date": "2026-10-13",
+      "station": "Glasgow (Bishopton)",
+      "central": 3,
+      "p10": 0,
+      "p90": 8
+    },
+    {
+      "date": "2026-10-13",
+      "station": "Edinburgh Gogarbank",
+      "central": 3,
+      "p10": 0,
+      "p90": 8
+    },
+    {
+      "date": "2026-10-14",
+      "station": "Kinloss",
+      "central": 2,
+      "p10": 0,
+      "p90": 8
+    },
+    {
+      "date": "2026-10-14",
+      "station": "Glasgow (Bishopton)",
+      "central": 0,
+      "p10": 0,
+      "p90": 6
+    },
+    {
+      "date": "2026-10-14",
+      "station": "Edinburgh Gogarbank",
+      "central": 1,
+      "p10": 0,
+      "p90": 7
+    }
+  ]
+}

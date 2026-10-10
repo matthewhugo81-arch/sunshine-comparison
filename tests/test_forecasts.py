@@ -60,6 +60,29 @@ class QualityChecks(unittest.TestCase):
         self.assertGreater(result['reported_hours']/result['daylight_hours'],.90)
         self.assertEqual(result['reasons'],[])
 
+    def test_high_cloud_with_high_sunshine_is_advisory_only(self):
+        item=copy.deepcopy(self.real[2])
+        item['hourly']['cloud_cover']=[100]*len(item['hourly']['time'])
+        item['hourly']['cloud_cover_low']=[0]*len(item['hourly']['time'])
+        result=self.assess(item)
+        self.assertEqual(result['status'],'experimental')
+        self.assertEqual(result['reasons'],[])
+        self.assertGreater(result['reported_hours']/result['daylight_hours'],.8)
+        self.assertEqual(len(result['review_flags']),1)
+        self.assertIn('mean total cloud',result['review_flags'][0])
+
+    def test_epd_reference_is_forecast_not_observation(self):
+        reference=json.loads((Path(__file__).resolve().parents[1]/'data/epd_reference.json').read_text())
+        self.assertIn('NOT observations',reference['status'])
+        stations=json.loads((Path(__file__).resolve().parents[1]/'data/stations.json').read_text())
+        names={s['name'] for s in stations}
+        for entry in reference['entries']:
+            self.assertIn(entry['station'],names)
+            self.assertLessEqual(entry['p10'],entry['central'])
+            self.assertLessEqual(entry['central'],entry['p90'])
+            self.assertGreaterEqual(entry['p10'],0)
+            self.assertTrue(entry['date'].startswith('2026-10-'))
+
     def test_missing_radiation_cannot_pass(self):
         item=copy.deepcopy(self.real[2]);item['hourly']['direct_radiation'][12]=None
         result=self.assess(item)

@@ -1,7 +1,7 @@
 'use strict';
 const NS='http://www.w3.org/2000/svg';
 const $=id=>document.getElementById(id);
-let forecast,stations,coastline;
+let forecast,stations,coastline,epdReference={entries:[]};
 const dateLabel=date=>new Intl.DateTimeFormat('en-GB',{weekday:'short',day:'numeric',month:'short',year:'numeric',timeZone:'UTC'}).format(new Date(`${date}T12:00:00Z`));
 const timeLabel=time=>new Intl.DateTimeFormat('en-GB',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit',hourCycle:'h23',timeZone:'UTC'}).format(new Date(time))+' UTC';
 const hours=value=>Number.isFinite(value)?String(Math.floor(value+.5)):'—';
@@ -11,7 +11,12 @@ const shownModels=()=>forecast.models.filter(m=>$('model-select').value==='all'|
 const available=(m,date)=>Array.isArray(m.daily[date])&&m.daily[date].length===stations.length&&m.daily[date].every(v=>v===null||Number.isFinite(v));
 const assessment=(m,date,i)=>m.quality[date][i];
 const valueLabel=(m,date,i)=>hours(m.daily[date][i]);
-const reasonLabel=(m,date,i)=>assessment(m,date,i).reasons.join('; ')||'Provider radiation estimate. Physical checks passed; sunshine accuracy is unverified.';
+const reasonLabel=(m,date,i)=>{
+  const q=assessment(m,date,i);
+  if(q.reasons.length)return q.reasons.join('; ');
+  return (q.review_flags||[]).length?'Review suggested: '+q.review_flags.join('; '):
+    'Provider radiation estimate. Physical checks passed; sunshine accuracy is unverified.';
+};
 function element(tag,attrs={},text){const e=document.createElementNS(NS,tag);Object.entries(attrs).forEach(([k,v])=>e.setAttribute(k,v));if(text!==undefined)e.textContent=text;return e;}
 function html(tag,cls,text){const e=document.createElement(tag);if(cls)e.className=cls;if(text!==undefined)e.textContent=text;return e;}
 
@@ -61,9 +66,45 @@ async function savePNG(svg,model,date,button){
   }catch(e){$('alert').textContent='The image could not be saved. Please try again.';$('alert').hidden=false;console.error(e);}
   finally{if(url)URL.revokeObjectURL(url);button.disabled=false;button.textContent='Save PNG';}
 }
+function renderEpd(date,models){
+  const section=$('epd-comparison');
+  const entries=(Array.isArray(epdReference.entries)?epdReference.entries:[])
+    .filter(e=>e.date===date&&Number.isFinite(e.p10)&&Number.isFinite(e.central)&&Number.isFinite(e.p90)
+      &&e.p10>=0&&e.p10<=e.central&&e.central<=e.p90)
+    .map(e=>({...e,stationIndex:stations.findIndex(s=>s.name===e.station)}))
+    .filter(e=>e.stationIndex>=0);
+  section.hidden=entries.length===0;
+  if(!entries.length)return;
+  const thead=$('epd-table').querySelector('thead'),tbody=$('epd-table').querySelector('tbody');
+  thead.replaceChildren();tbody.replaceChildren();
+  const head=html('tr');
+  ['Station','EPD central','EPD 10th–90th',...models.map(m=>m.name)].forEach((title,i)=>{
+    const th=html('th',i>=1?'number':'',title);th.scope='col';head.append(th);
+  });
+  thead.append(head);
+  let compared=0,outside=0;
+  entries.forEach(e=>{
+    const tr=html('tr');
+    tr.append(html('td','',e.station),html('td','number',String(e.central)),
+      html('td','number',`${e.p10}–${e.p90}`));
+    models.forEach(m=>{
+      const value=available(m,date)?m.daily[date][e.stationIndex]:null;
+      const beyond=Number.isFinite(value)&&(value<e.p10-.5||value>e.p90+.5);
+      if(Number.isFinite(value)){compared++;if(beyond)outside++;}
+      const td=html('td','number'+(beyond?' epd-outside':''),Number.isFinite(value)?value.toFixed(1):'—');
+      td.title=beyond?'Outside this EPD percentile interval, allowing ±0.5 h for displayed rounding; independent forecasts can disagree.':
+        'Derived model estimate; EPD is another forecast, not an observation.';
+      tr.append(td);
+    });
+    tbody.append(tr);
+  });
+  $('epd-summary').textContent=`${entries.length} sampled stations · ${outside} of ${compared} available model forecasts outside the displayed EPD 10th–90th interval (±0.5h rounding allowance). Differences are review prompts, not verified errors.`;
+}
+
 function render(){
   const date=$('forecast-date').value;const models=shownModels();const count=models.filter(m=>available(m,date)).length;
   const withheld=models.reduce((n,m)=>n+(available(m,date)?m.daily[date].filter(v=>v===null).length:0),0);
+  const reviews=models.reduce((n,m)=>n+(available(m,date)?m.quality[date].filter(q=>(q.review_flags||[]).length).length:0),0);
   $('day-title').textContent=dateLabel(date);$('coverage').textContent=`${count} of ${models.length} feeds`+(withheld?` · ${withheld} source failures`:'');
   const select=$('forecast-date');$('previous').disabled=select.selectedIndex===0;$('next').disabled=select.selectedIndex===select.options.length-1;
   $('maps').classList.toggle('single',models.length===1);$('maps').replaceChildren();
@@ -82,19 +123,27 @@ function render(){
   const table=$('station-table'),thead=table.querySelector('thead'),tbody=table.querySelector('tbody');thead.replaceChildren();tbody.replaceChildren();
   const header=html('tr');['Station','Region','Daylight',...models.map(m=>m.name)].forEach((name,i)=>{const th=html('th',i>=3?'number':'',name);th.scope='col';header.append(th);});thead.append(header);
   stations.forEach((station,i)=>{const row=html('tr'),daylight=html('td','daylight-cell',daylightLabel(forecast.daylight[date][i].daylight_hours));daylight.title=daylightInfo(date,i);row.append(html('td','',station.name),html('td','region',station.region),daylight);models.forEach(model=>{const valid=available(model,date),failed=valid&&model.daily[date][i]===null,td=html('td','number'+(!valid||failed?' missing':''),valid?valueLabel(model,date,i):'—');if(!valid)td.setAttribute('aria-label','No complete source data');else{td.title=`${reasonLabel(model,date,i)} ${daylightInfo(date,i)}`;if(failed)td.setAttribute('aria-label',`Source failure: ${reasonLabel(model,date,i)}`);}row.append(td);});tbody.append(row);});
-  $('quality-summary').textContent=`Source checks and cloud / rain context${withheld?` · ${withheld} source failures`:''}`;
+  $('quality-summary').textContent=`Source checks and cloud / rain context${withheld?` · ${withheld} source failures`:''}${reviews?` · ${reviews} advisory reviews`:''}`;
   const qbody=$('quality-table').querySelector('tbody');qbody.replaceChildren();
   models.filter(m=>available(m,date)).forEach(model=>stations.forEach((station,i)=>{
     const q=assessment(model,date,i),row=html('tr'),format=(v,d=1)=>Number.isFinite(v)?v.toFixed(d):'—';
-    const values=[`${station.name} / ${model.name}`,format(q.reported_hours,2),format(q.daylight_hours,2),`${format(q.daylight_cloud_percent,0)}% / ${format(q.daylight_low_cloud_percent,0)}%`,format(q.rain_in_daylight_intervals_mm,2),q.status==='experimental'?'Physical checks passed; sunshine accuracy unverified':`Source failure: ${q.reasons.join('; ')}`];
+    const values=[`${station.name} / ${model.name}`,format(q.reported_hours,2),format(q.daylight_hours,2),`${format(q.daylight_cloud_percent,0)}% / ${format(q.daylight_low_cloud_percent,0)}%`,format(q.rain_in_daylight_intervals_mm,2),q.status==='experimental'?(q.review_flags?.length?`Review suggested: ${q.review_flags.join('; ')}`:'Physical checks passed; sunshine accuracy unverified'):`Source failure: ${q.reasons.join('; ')}`];
     values.forEach((v,j)=>{const td=html('td',j===5?'check-reason':'',v);row.append(td);});qbody.append(row);
   }));
+  renderEpd(date,models);
   const url=new URL(location.href);url.searchParams.set('date',date);url.searchParams.set('model',$('model-select').value);history.replaceState(null,'',url);
 }
 async function init(){
   try{
     [forecast,stations,coastline]=await Promise.all(['data/forecast.json','data/stations.json','assets/coastline.json'].map(async path=>{const r=await fetch(path,{cache:'no-cache'});if(!r.ok)throw Error(`Unable to load ${path}`);return r.json();}));
     if(forecast.schema_version!==3||forecast.station_count!==stations.length||!forecast.dates.length||!forecast.daylight)throw Error('Quality-checked forecast data is incomplete');
+    try{
+      const response=await fetch('data/epd_reference.json',{cache:'no-cache'});
+      if(response.ok){
+        const reference=await response.json();
+        if(Array.isArray(reference.entries))epdReference=reference;
+      }
+    }catch(e){console.warn('Optional EPD reference could not be loaded',e);}
     const params=new URLSearchParams(location.search);
     forecast.models.forEach(model=>{const o=document.createElement('option');o.value=model.id;o.textContent=model.name;$('model-select').append(o);});
     if(forecast.models.some(m=>m.id===params.get('model')))$('model-select').value=params.get('model');
