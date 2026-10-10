@@ -6,6 +6,26 @@ unvalidated cloud/rain screens corrects a screening mistake, not the underlying
 sunshine method. Physical source failures remain null and are never filled with
 zero, the old invalid estimate, daylight, or an invented lower number.
 
+## EPD independent probabilistic comparison — 10 October 2026
+
+Five EPD sunshine maps supplied by the forecaster (valid 10–14 October 2026)
+show a notably less sunny scenario than the provider-derived GFS in several
+cases. For example, EPD Kinloss on 12 October is central 0 h (10th 0 h,
+90th 4 h), whereas the current GFS-derived estimate is around 9 h in
+100% mean total cloud. The 14 October GFS-derived sunshine estimates are
+also notably larger than EPD central estimates at many stations.
+
+The published machine-readable reference contains only 15 manually transcribed
+station/date samples across Kinloss, Glasgow (Bishopton) and Edinburgh Gogarbank.
+We have not inferred missing stations or given the screenshot-based values a
+verified source cycle. This evidence justifies quality investigation but cannot
+justify overwriting any deterministic forecast with EPD estimates.
+
+Next step: obtain EPD's original timestamped station quantiles and accumulation
+definitions, then align valid dates, issue times and geographical sampling.
+Separately score all providers against **observed** sunshine duration by
+station, lead time and season, with missing-data and rounded-zero handling.
+
 ## What was checked
 
 | Model/source | Finding | Decision |
