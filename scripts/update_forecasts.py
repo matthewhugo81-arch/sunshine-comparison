@@ -23,7 +23,7 @@ VARIABLES = ['sunshine_duration','shortwave_radiation','direct_radiation','diffu
              'cloud_cover_high','precipitation']
 UNITS = {v: ('s' if v=='sunshine_duration' else '%' if v.startswith('cloud_cover') else
               'mm' if v=='precipitation' else 'W/m²') for v in VARIABLES}
-QC_VERSION = '2026-10-09.3'
+QC_VERSION = '2026-10-10.1'
 RADIATION_VARIABLES = ['shortwave_radiation','direct_radiation','diffuse_radiation',
                        'direct_normal_irradiance']
 
@@ -223,7 +223,7 @@ def build_snapshot(stations,run,responses,now):
     if not dates:raise ValueError('No current/future complete days')
     daylight={date:[daylight_details(date,s['latitude'],s['longitude']) for s in stations] for date in dates}
     return {'schema_version':3,'quality_version':QC_VERSION,'validation_status':'experimental; not observation-validated',
-            'quality_scope':'Physical consistency and completeness only; cloud/rain context does not alter sunshine.',
+            'quality_scope':'Physical consistency determines display; high cloud/sunshine review flags are advisory only. No observation validation.',
             'source_assessment':'https://github.com/matthewhugo81-arch/sunshine-comparison/blob/main/docs/source-assessment.md',
             'daylight':daylight,'daylight_method':'NOAA/Meeus apparent sunrise–sunset; station coordinates, exact Gregorian date, UTC, flat sea-level horizon; excludes twilight.',
             'updated_at':now.isoformat(),'run':run+'Z','dates':dates,
