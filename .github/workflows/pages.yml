@@ -26,6 +26,8 @@ jobs:
           python-version: '3.12'
       - name: Check aggregation and quality screening
         run: python -m unittest discover -s tests
+      - name: Validate browser JavaScript
+        run: node --check app.js
       - name: Refresh the common 00 UTC forecast run
         env:
           OPEN_METEO_API_KEY: ${{ secrets.OPEN_METEO_API_KEY }}
