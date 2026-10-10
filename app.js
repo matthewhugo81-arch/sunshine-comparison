@@ -2,6 +2,7 @@
 const NS='http://www.w3.org/2000/svg';
 const $=id=>document.getElementById(id);
 let forecast,stations,coastline,epdReference={entries:[]};
+const CLOUD_COLUMNS=[['daylight_cloud_percent','Total'],['daylight_low_cloud_percent','Low'],['daylight_mid_cloud_percent','Medium'],['daylight_high_cloud_percent','High']];
 const dateLabel=date=>new Intl.DateTimeFormat('en-GB',{weekday:'short',day:'numeric',month:'short',year:'numeric',timeZone:'UTC'}).format(new Date(`${date}T12:00:00Z`));
 const timeLabel=time=>new Intl.DateTimeFormat('en-GB',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit',hourCycle:'h23',timeZone:'UTC'}).format(new Date(time))+' UTC';
 const hours=value=>Number.isFinite(value)?String(Math.floor(value+.5)):'—';
@@ -11,19 +12,20 @@ const shownModels=()=>forecast.models.filter(m=>$('model-select').value==='all'|
 const available=(m,date)=>Array.isArray(m.daily[date])&&m.daily[date].length===stations.length&&m.daily[date].every(v=>v===null||Number.isFinite(v));
 const assessment=(m,date,i)=>m.quality[date][i];
 const valueLabel=(m,date,i)=>hours(m.daily[date][i]);
-const reasonLabel=(m,date,i)=>{
-  const q=assessment(m,date,i);
-  if(q.reasons.length)return q.reasons.join('; ');
-  return (q.review_flags||[]).length?'Review suggested: '+q.review_flags.join('; '):
-    'Provider radiation estimate. Physical checks passed; sunshine accuracy is unverified.';
-};
+const cloudData=(m,date,i)=>m.cloud_daily?.[date]?.[i]||m.quality?.[date]?.[i]||{};
+const cloudCount=q=>CLOUD_COLUMNS.filter(([key])=>Number.isFinite(q[key])).length;
+const cloudText=q=>'Daylight cloud: '+CLOUD_COLUMNS.map(([key,label])=>`${label.toLowerCase()} ${Number.isFinite(q[key])?q[key].toFixed(0)+'%':'unavailable'}`).join(' · ')+'.';
+const qualityReason=q=>q.reasons?.length?'Source failure: '+q.reasons.join('; '):
+  q.review_flags?.length?'Review suggested: '+q.review_flags.join('; '):
+  'Physical checks passed; sunshine accuracy unverified.';
+const reasonLabel=(m,date,i)=>qualityReason(assessment(m,date,i))+' '+cloudText(cloudData(m,date,i));
 function element(tag,attrs={},text){const e=document.createElementNS(NS,tag);Object.entries(attrs).forEach(([k,v])=>e.setAttribute(k,v));if(text!==undefined)e.textContent=text;return e;}
 function html(tag,cls,text){const e=document.createElement(tag);if(cls)e.className=cls;if(text!==undefined)e.textContent=text;return e;}
 
 function buildDates(preferred){
   const models=shownModels();
-  const dates=forecast.dates.filter(date=>models.some(m=>available(m,date)));
-  $('forecast-date').replaceChildren(...dates.map(date=>{const o=document.createElement('option');o.value=date;o.textContent=dateLabel(date);return o;}));
+  const dates=forecast.dates.filter(date=>models.some(m=>available(m,date)||m.cloud_daily?.[date]?.some(c=>cloudCount(c)>0)));
+  $('forecast-date').replaceChildren(...dates.map(date=>{const o=document.createElement('option');o.value=date;o.textContent=dateLabel(date)+(models.some(m=>available(m,date))?'':' · cloud only');return o;}));
   $('forecast-date').value=dates.includes(preferred)?preferred:dates.filter(d=>d<=preferred).at(-1)||dates[0];
 }
 function makeMap(model,date){
@@ -100,17 +102,40 @@ function renderEpd(date,models){
   });
   $('epd-summary').textContent=`${entries.length} sampled stations · ${outside} of ${compared} available model forecasts outside the displayed EPD 10th–90th interval (±0.5h rounding allowance). Differences are review prompts, not verified errors.`;
 }
-
+function renderClouds(date,models){
+  const i=Number($('cloud-station').value);
+  if(!Number.isInteger(i)||!stations[i])return;
+  const body=$('cloud-table').querySelector('tbody');body.replaceChildren();
+  let complete=0;
+  models.forEach(model=>{
+    const context=cloudData(model,date,i),q=model.quality?.[date]?.[i];
+    const value=model.daily?.[date]?.[i];const count=cloudCount(context);
+    if(count===4)complete++;
+    const row=html('tr');const name=html('th','',model.name);name.scope='row';name.title=`Run: ${timeLabel(model.run)}`;row.append(name);
+    row.append(html('td','number',Number.isFinite(value)?value.toFixed(1):'—'));
+    CLOUD_COLUMNS.forEach(([key,label])=>{
+      const v=context[key];const td=html('td','number'+(Number.isFinite(v)?'':' missing'),Number.isFinite(v)?v.toFixed(0):'—');
+      td.title=Number.isFinite(v)?`${label} cloud: ${v.toFixed(1)}%, time-weighted over the full daylight window.`:
+        `${label} cloud is missing or has incomplete/invalid daylight samples; not zero.`;
+      row.append(td);
+    });
+    row.append(html('td','',`${count}/4 complete`));
+    row.append(html('td','check-reason',q?qualityReason(q):
+      count?'Cloud forecast available; no complete sunshine total for this date.':'No complete cloud or sunshine data for this date.'));
+    body.append(row);
+  });
+  $('cloud-summary').textContent=`${stations[i].name} · ${dateLabel(date)} · ${complete} of ${models.length} selected models have all four full-day cloud fields. Cloud and sunshine availability are checked separately.`;
+}
 function render(){
   const date=$('forecast-date').value;const models=shownModels();const count=models.filter(m=>available(m,date)).length;
   const withheld=models.reduce((n,m)=>n+(available(m,date)?m.daily[date].filter(v=>v===null).length:0),0);
   const reviews=models.reduce((n,m)=>n+(available(m,date)?m.quality[date].filter(q=>(q.review_flags||[]).length).length:0),0);
-  $('day-title').textContent=dateLabel(date);$('coverage').textContent=`${count} of ${models.length} feeds`+(withheld?` · ${withheld} source failures`:'');
+  $('day-title').textContent=dateLabel(date);$('coverage').textContent=`${count} of ${models.length} sunshine feeds`+(withheld?` · ${withheld} source failures`:'');
   const select=$('forecast-date');$('previous').disabled=select.selectedIndex===0;$('next').disabled=select.selectedIndex===select.options.length-1;
   $('maps').classList.toggle('single',models.length===1);$('maps').replaceChildren();
   models.forEach(model=>{
     const card=html('article','map-card'),header=html('div','card-header'),heading=html('div');
-    heading.append(html('h3','',model.name),html('p','',`${model.resolution} grid · through ${dateLabel(model.available_through)}`));header.append(heading);card.append(header);
+    heading.append(html('h3','',model.name),html('p','',`${model.resolution} grid · sunshine through ${dateLabel(model.available_through)}`));header.append(heading);card.append(header);
     if(available(model,date)){
       const svg=makeMap(model,date),button=html('button','download','Save PNG');button.setAttribute('aria-label',`Save ${model.name} map as PNG`);button.addEventListener('click',()=>savePNG(svg,model,date,button));header.append(button);card.append(svg);
       const failures=model.daily[date].filter(v=>v===null).length;
@@ -127,9 +152,12 @@ function render(){
   const qbody=$('quality-table').querySelector('tbody');qbody.replaceChildren();
   models.filter(m=>available(m,date)).forEach(model=>stations.forEach((station,i)=>{
     const q=assessment(model,date,i),row=html('tr'),format=(v,d=1)=>Number.isFinite(v)?v.toFixed(d):'—';
-    const values=[`${station.name} / ${model.name}`,format(q.reported_hours,2),format(q.daylight_hours,2),`${format(q.daylight_cloud_percent,0)}% / ${format(q.daylight_low_cloud_percent,0)}%`,format(q.rain_in_daylight_intervals_mm,2),q.status==='experimental'?(q.review_flags?.length?`Review suggested: ${q.review_flags.join('; ')}`:'Physical checks passed; sunshine accuracy unverified'):`Source failure: ${q.reasons.join('; ')}`];
-    values.forEach((v,j)=>{const td=html('td',j===5?'check-reason':'',v);row.append(td);});qbody.append(row);
+    const values=[`${station.name} / ${model.name}`,format(q.reported_hours,2),format(q.daylight_hours,2),
+      ...CLOUD_COLUMNS.map(([key])=>format(q[key],0)),format(q.rain_in_daylight_intervals_mm,2),
+      `${cloudCount(q)}/4 complete`,qualityReason(q)];
+    values.forEach((v,j)=>{const td=html('td',j===9?'check-reason':'',v);row.append(td);});qbody.append(row);
   }));
+  renderClouds(date,models);
   renderEpd(date,models);
   const url=new URL(location.href);url.searchParams.set('date',date);url.searchParams.set('model',$('model-select').value);history.replaceState(null,'',url);
 }
@@ -147,6 +175,9 @@ async function init(){
     const params=new URLSearchParams(location.search);
     forecast.models.forEach(model=>{const o=document.createElement('option');o.value=model.id;o.textContent=model.name;$('model-select').append(o);});
     if(forecast.models.some(m=>m.id===params.get('model')))$('model-select').value=params.get('model');
+    stations.forEach((station,i)=>{const o=document.createElement('option');o.value=String(i);o.textContent=station.name;$('cloud-station').append(o);});
+    $('cloud-station').disabled=false;
+    $('cloud-station').addEventListener('change',()=>renderClouds($('forecast-date').value,shownModels()));
     buildDates(params.get('date')||forecast.dates[0]);$('forecast-date').disabled=false;$('model-select').disabled=false;
     $('run-info').textContent=`Common forecast run: ${timeLabel(forecast.run)}`;$('updated-info').textContent=`Retrieved: ${timeLabel(forecast.updated_at)}`;
     if(Date.now()-Date.parse(forecast.updated_at)>24*3600000||Date.now()-Date.parse(forecast.run)>40*3600000){$('alert').textContent='These forecasts may be out of date. Check the run and update times above before use.';$('alert').hidden=false;}

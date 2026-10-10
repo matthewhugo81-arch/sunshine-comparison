@@ -1,4 +1,4 @@
-"""Refresh complete 24-hour sunshine totals from explicit, common 00 UTC runs."""
+"""Refresh sunshine and daylight cloud context from explicit common 00 UTC runs."""
 from pathlib import Path
 from datetime import datetime, timedelta, timezone
 import argparse
@@ -23,9 +23,15 @@ VARIABLES = ['sunshine_duration','shortwave_radiation','direct_radiation','diffu
              'cloud_cover_high','precipitation']
 UNITS = {v: ('s' if v=='sunshine_duration' else '%' if v.startswith('cloud_cover') else
               'mm' if v=='precipitation' else 'W/m²') for v in VARIABLES}
-QC_VERSION = '2026-10-10.1'
+QC_VERSION = '2026-10-10.2'
 RADIATION_VARIABLES = ['shortwave_radiation','direct_radiation','diffuse_radiation',
                        'direct_normal_irradiance']
+CLOUD_FIELDS = {
+    'cloud_cover':'daylight_cloud_percent',
+    'cloud_cover_low':'daylight_low_cloud_percent',
+    'cloud_cover_mid':'daylight_mid_cloud_percent',
+    'cloud_cover_high':'daylight_high_cloud_percent',
+}
 
 def finite(value):
     return not isinstance(value,bool) and isinstance(value,(float,int)) and math.isfinite(value)
@@ -83,15 +89,79 @@ def daylight_details(date, latitude, longitude):
     return {'sunrise_utc':clock(rise),'sunset_utc':clock(setting),
             'daylight_hours':round((setting-rise)/60,6)}
 
-def assess_day(hourly, date, latitude, longitude):
-    """Check source physics, without cloud/rain thresholds or manufactured corrections.
+def hourly_rows(hourly):
+    """Absent optional fields stay missing; never substitute zero cloud or rain."""
+    return {t:{v:(hourly[v][i] if isinstance(hourly.get(v),list) and i<len(hourly[v]) else None)
+               for v in VARIABLES} for i,t in enumerate(hourly['time'])}
 
-    Cloud and rain are context only: their coincidence with sunshine is not a
-    quantitative sunshine model. A passing result remains a provider estimate,
-    not an observation-validated forecast or a native sunshine-duration field.
+def cloud_context(hourly, date, latitude, longitude):
+    """Daylight means of all four cloud fields, independently completeness-checked.
+
+    API cloud amounts are instantaneous. Integrate a linear interpolation of
+    each pair of hourly endpoints ONLY across its sunrise/sunset overlap. This
+    is a temporal sampling approximation, not sub-hourly observed cloud data.
+    Layers are neither added together nor substituted for provider total cloud.
     """
     day=datetime.fromisoformat(date)
-    bytime={t:{v:hourly[v][i] for v in VARIABLES} for i,t in enumerate(hourly['time'])}
+    rise,setting=solar_window(date,latitude,longitude)
+    daylight=(setting-rise)/60
+    bytime=hourly_rows(hourly)
+    sums={v:0.0 for v in CLOUD_FIELDS}
+    covered={v:0.0 for v in CLOUD_FIELDS}
+    rain=0.0;rain_complete=True
+    for h in range(1,25):
+        start=(h-1)*60
+        left=max(start,rise);right=min(h*60,setting)
+        if right<=left:continue
+        weight=(right-left)/60
+        # The integral of a linear function equals its midpoint value * width.
+        fraction=((left+right)/2-start)/60
+        previous=bytime.get((day+timedelta(hours=h-1)).isoformat(timespec='minutes'),{})
+        current=bytime.get((day+timedelta(hours=h)).isoformat(timespec='minutes'),{})
+        for variable in CLOUD_FIELDS:
+            a=previous.get(variable);b=current.get(variable)
+            if not (finite(a) and finite(b) and 0<=a<=100 and 0<=b<=100):continue
+            sums[variable]+=(a+(b-a)*fraction)*weight
+            covered[variable]+=weight
+        amount=current.get('precipitation')
+        if finite(amount) and amount>=0:rain+=amount
+        else:rain_complete=False
+    result={'cloud_coverage':{},'cloud_fields_complete':0}
+    for variable,output in CLOUD_FIELDS.items():
+        complete=math.isclose(covered[variable],daylight,abs_tol=1e-8,rel_tol=0)
+        result['cloud_coverage'][variable]={
+            'complete':complete,'daylight_hours':round(covered[variable],5),
+            'coverage_percent':round(100*covered[variable]/daylight,2)}
+        if complete:
+            result[output]=round(sums[variable]/daylight,1)
+            result['cloud_fields_complete']+=1
+    # Rain covers whole intervals touching daylight, NOT a fractional rain estimate.
+    if rain_complete:result['rain_in_daylight_intervals_mm']=round(rain,2)
+    return result
+
+def cloud_review_flags(context, sunshine, daylight):
+    """Uncalibrated review prompts, not errors, probabilities or corrections."""
+    if not finite(sunshine) or sunshine<.8*daylight:return []
+    total=context.get('daylight_cloud_percent')
+    low=context.get('daylight_low_cloud_percent')
+    mid=context.get('daylight_mid_cloud_percent')
+    high=context.get('daylight_high_cloud_percent')
+    triggers=[]
+    if finite(total) and total>=90:triggers.append('>=90% mean total cloud')
+    if finite(low) and low>=80:triggers.append('>=80% mean low cloud')
+    if finite(mid) and mid>=80:triggers.append('>=80% mean medium cloud')
+    if not triggers:return []
+    value=lambda v:f'{v:.0f}%' if finite(v) else 'missing'
+    detail=f'Low {value(low)}, medium {value(mid)}, high {value(high)}.'
+    if all(finite(v) for v in [low,mid,high]) and high>=80 and low<=20 and mid<=20:
+        detail+=' High cloud dominates; its optical thickness is unknown.'
+    return ['High sunshine (>=80% of daylight) alongside '+', '.join(triggers)+'. '+detail+
+            ' Daylight means do not establish simultaneous cloud and sunshine; review only, no correction.']
+
+def assess_day(hourly, date, latitude, longitude, *, context=None):
+    """Check source physics; use all cloud layers for context, never invented corrections."""
+    day=datetime.fromisoformat(date)
+    bytime=hourly_rows(hourly)
     stamps=[(day+timedelta(hours=h)).isoformat(timespec='minutes') for h in range(1,25)]
     rows=[bytime.get(t,{}) for t in stamps]
     total=daily_total({t:r.get('sunshine_duration') for t,r in zip(stamps,rows)},date)
@@ -118,33 +188,10 @@ def assess_day(hourly, date, latitude, longitude):
     result={'status':'withheld' if failures else 'experimental','reported_hours':round(total,5),
             'daylight_hours':round(daylight,3),'reasons':list(dict.fromkeys(failures)),
             'radiation_failures':evidence,'review_flags':[]}
-    if not failures or (len(failures)==1 and evidence):
-        cloud_sum=low_sum=rain=weight_sum=0
-        for h,(stamp,row) in enumerate(zip(stamps,rows),1):
-            weight=max(0,min(h*60,setting)-max((h-1)*60,rise))/60
-            if weight<=0:continue
-            prev=bytime.get((day+timedelta(hours=h-1)).isoformat(timespec='minutes'),{})
-            if (not all(finite(r.get(v)) and 0<=r[v]<=100
-                        for r in [prev,row] for v in ['cloud_cover','cloud_cover_low'])
-                    or not finite(row.get('precipitation')) or row['precipitation']<0):
-                # Missing optional context cannot invalidate complete radiation data.
-                return result
-            # Cloud is instantaneous: average both bounds of the preceding-hour interval.
-            cloud=(prev['cloud_cover']+row['cloud_cover'])/2
-            low=(prev['cloud_cover_low']+row['cloud_cover_low'])/2
-            cloud_sum+=cloud*weight;low_sum+=low*weight;weight_sum+=weight
-            # Rain in an interval touching daylight is included in full, not treated as precise daylight timing.
-            rain+=row['precipitation']
-        cloud_mean=cloud_sum/weight_sum if weight_sum else 0
-        low_mean=low_sum/weight_sum if weight_sum else 0
-        result.update(daylight_cloud_percent=round(cloud_mean,1),daylight_low_cloud_percent=round(low_mean,1),
-                      rain_in_daylight_intervals_mm=round(rain,2))
-        # This is an advisory cross-variable diagnostic, NOT a sunshine correction.
-        # Extensive thin/high cloud can coexist with bright sunshine.
-        if result['status']=='experimental' and cloud_mean>=90 and total>=0.8*daylight:
-            result['review_flags'].append(
-                'High sunshine (>=80% of daylight) alongside >=90% mean total cloud; '
-                'review radiation/cloud definition, including thin high cloud')
+    # A missing cloud layer or rain amount cannot erase other valid cloud fields.
+    # Cloud context also remains visible when the sunshine source is withheld.
+    result.update(context if context is not None else cloud_context(hourly,date,latitude,longitude))
+    if not failures:result['review_flags']=cloud_review_flags(result,total,daylight)
     return result
 
 def daily_total(hourly, date):
@@ -180,6 +227,8 @@ def fetch(model, stations, run):
         if item.get('location_id',index)!=index:raise ValueError('Unexpected location order')
         if item.get('utc_offset_seconds')!=0:raise ValueError('Expected UTC data')
         for variable,unit in UNITS.items():
+            if variable not in item['hourly'] and (variable in CLOUD_FIELDS or variable=='precipitation'):
+                continue  # optional absence stays recorded in the raw response and coverage
             if item['hourly_units'].get(variable)!=unit:raise ValueError(f'Unexpected {variable} units')
             if len(item['hourly']['time'])!=len(item['hourly'][variable]):raise ValueError('Mismatched hourly data')
         times=item['hourly']['time']
@@ -206,10 +255,14 @@ def build_snapshot(stations,run,responses,now):
     start=datetime.fromisoformat(run).date()
     models=[]
     for model,locations in zip(MODELS,responses):
-        daily={};quality={}
+        daily={};quality={};cloud_daily={}
         for day in range(model['max_days']):
             date=(start+timedelta(days=day)).isoformat()
-            checks=[assess_day(r['hourly'],date,r['latitude'],r['longitude']) for r in locations]
+            contexts=[cloud_context(r['hourly'],date,r['latitude'],r['longitude']) for r in locations]
+            # Clouds can remain available beyond the shorter sunshine/radiation horizon.
+            if any(c['cloud_fields_complete']>0 for c in contexts):cloud_daily[date]=contexts
+            checks=[assess_day(r['hourly'],date,r['latitude'],r['longitude'],context=c)
+                    for r,c in zip(locations,contexts)]
             # Require complete sunshine intervals at every station. Physical source
             # failures remain null; unsupported cloud/rain rules never suppress totals.
             if all(check is not None for check in checks):
@@ -217,13 +270,16 @@ def build_snapshot(stations,run,responses,now):
                 daily[date]=[c['reported_hours'] if c['status']=='experimental' else None for c in checks]
         if not daily:raise ValueError(f'{model["name"]}: no complete days')
         cells=[{'latitude':r['latitude'],'longitude':r['longitude']} for r in locations]
-        models.append({**model,'run':run+'Z','daily':daily,'quality':quality,'grid_cells':cells,'available_through':max(daily)})
+        models.append({**model,'run':run+'Z','daily':daily,'quality':quality,'grid_cells':cells,
+                       'available_through':max(daily),'cloud_daily':cloud_daily,
+                       'cloud_available_through':max(cloud_daily,default=None)})
     today=now.date().isoformat()
-    dates=sorted({date for m in models for date in m['daily'] if date>=today})
+    dates=sorted({date for m in models for date in set(m['daily'])|set(m['cloud_daily']) if date>=today})
     if not dates:raise ValueError('No current/future complete days')
     daylight={date:[daylight_details(date,s['latitude'],s['longitude']) for s in stations] for date in dates}
     return {'schema_version':3,'quality_version':QC_VERSION,'validation_status':'experimental; not observation-validated',
-            'quality_scope':'Physical consistency determines display; high cloud/sunshine review flags are advisory only. No observation validation.',
+            'quality_scope':'Physical consistency determines sunshine display; total/low/medium/high cloud are independent daylight diagnostics. Review flags never correct sunshine.',
+            'cloud_method':'Time-weighted sunrise-to-sunset means of linearly interpolated hourly cloud endpoints at the same model/run/grid cell. Each field requires full daylight coverage. Provider total is not a sum of layers; layer definitions can differ by model.',
             'source_assessment':'https://github.com/matthewhugo81-arch/sunshine-comparison/blob/main/docs/source-assessment.md',
             'daylight':daylight,'daylight_method':'NOAA/Meeus apparent sunrise–sunset; station coordinates, exact Gregorian date, UTC, flat sea-level horizon; excludes twilight.',
             'updated_at':now.isoformat(),'run':run+'Z','dates':dates,
@@ -255,6 +311,12 @@ def main():
     raw_target=ROOT/'data/hourly.json';raw_temp=raw_target.with_suffix('.tmp')
     raw_temp.write_text(json.dumps(raw,ensure_ascii=False,separators=(',',':')),encoding='utf-8');raw_temp.replace(raw_target)
     print('Run:',snapshot['run'])
-    for m in snapshot['models']:print(m['name'],len(m['daily']),'complete days; through',m['available_through'])
+    for m in snapshot['models']:
+        print(m['name'],len(m['daily']),'complete sunshine days; through',m['available_through'],
+              '| cloud through',m['cloud_available_through'])
+        for date in snapshot['dates'][:5]:
+            contexts=m['cloud_daily'].get(date,[])
+            counts={v:sum(c['cloud_coverage'][v]['complete'] for c in contexts) for v in CLOUD_FIELDS}
+            print(' ',date,'complete cloud fields at stations:',counts)
 
 if __name__=='__main__':main()
