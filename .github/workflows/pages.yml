@@ -1,17 +1,17 @@
-name: Update sunshine and publish
+name: Publish retired sunshine project
+# Retired on 12 October 2026 following the forecaster-requested source review.
+# No schedule, provider requests, forecast refreshes or snapshot commits.
 on:
   push:
     branches: [main]
   workflow_dispatch:
-  schedule:
-    - cron: '17 2,8,14,20 * * *'
 permissions:
-  contents: write
+  contents: read
   pages: write
   id-token: write
 concurrency:
   group: sunshine-pages
-  cancel-in-progress: false
+  cancel-in-progress: true
 jobs:
   publish:
     runs-on: ubuntu-latest
@@ -24,28 +24,15 @@ jobs:
       - uses: actions/setup-python@v6
         with:
           python-version: '3.12'
-      - name: Check aggregation and quality screening
+      - name: Check preserved calculation and quality tests
         run: python -m unittest discover -s tests
-      - name: Validate browser JavaScript
+      - name: Validate preserved browser JavaScript
         run: node --check app.js
-      - name: Refresh the common 00 UTC forecast run
-        env:
-          OPEN_METEO_API_KEY: ${{ secrets.OPEN_METEO_API_KEY }}
-        run: python scripts/update_forecasts.py
-      - name: Record the current forecast snapshot
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add data/forecast.json data/hourly.json
-          if ! git diff --cached --quiet; then
-            git commit -m "Update sunshine forecast snapshot"
-            git push
-          fi
-      - name: Prepare public files
+      - name: Prepare static retirement page and research archive
         run: |
           mkdir _site
           cp index.html styles.css app.js _site/
-          cp -R assets data _site/
+          cp -R assets data docs _site/
           touch _site/.nojekyll
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v4
